@@ -1,0 +1,1096 @@
+<title>Покерный штаб</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: a single felt "table" column; top nav of rails, each screen a stack of panels; scenarios render on a felt strip with real cards. */
+:root{
+  --felt:#0d3530; --felt-2:#12443d; --felt-3:#18554b;
+  --rail:#2a1d14; --rail-2:#3a2a1d;
+  --ink:#f1ead9; --muted:#a8bcb2; --faint:#6f8a80;
+  --brass:#d9ad55; --brass-ink:#1c140a;
+  --line:rgba(241,234,217,.13); --line-2:rgba(241,234,217,.22);
+  --panel:rgba(5,24,21,.42);
+  --paper:#f8f3e7; --paper-ink:#1b1a17;
+  --s-spade:#1b1a17; --s-heart:#c8382e; --s-diam:#2463c9; --s-club:#1f7f45;
+  --good:#63d18f; --bad:#f0705f; --warn:#f0c04f; --info:#7fb7ff;
+  --f-display:"Unbounded","Arial Black",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:12px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;background:var(--felt);background-image:radial-gradient(ellipse 120% 70% at 50% 0%,var(--felt-3) 0%,var(--felt) 55%,#0a2b26 100%);color:var(--ink);font:15px/1.55 var(--f-body);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.wrap{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:0 64px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;letter-spacing:-.01em;text-wrap:balance;margin:0}
+h1{font-size:clamp(24px,5vw,36px);line-height:1.1}
+h2{font-size:clamp(18px,3.4vw,22px);line-height:1.2}
+h3{font-size:15px;line-height:1.3}
+p{margin:0}
+.muted{color:var(--muted)}
+.faint{color:var(--faint)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font:600 11px/1 var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:var(--brass)}
+.stack{display:flex;flex-direction:column;gap:16px}
+.stack-s{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}
+.grid2>*,.grid3>*{min-width:0}
+
+/* header + nav */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:linear-gradient(var(--rail-2),var(--rail));border-bottom:1px solid #000;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+.top-in{max-width:980px;margin:0 auto;padding:10px 16px 0;display:flex;flex-direction:column;gap:8px}
+.brand{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.logo{font:800 15px/1 var(--f-display);letter-spacing:.02em;display:flex;align-items:center;gap:8px}
+.logo .chip{width:22px;height:22px;border-radius:50%;background:repeating-conic-gradient(var(--brass) 0 30deg,var(--paper) 30deg 60deg);box-shadow:inset 0 0 0 4px var(--rail),inset 0 0 0 5px var(--brass)}
+.sync{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.sync i{width:7px;height:7px;border-radius:50%;background:var(--faint);display:inline-block}
+.sync.on i{background:var(--good)}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{flex:none;background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px 9px;color:var(--muted);font-weight:600;font-size:14px;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--brass)}
+nav.tabs button:hover{color:var(--ink)}
+
+main{padding-top:22px}
+section.screen{display:flex;flex-direction:column;gap:18px}
+
+/* panels */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.panel.tight{padding:14px}
+.panel h2+p,.panel h3+p{margin-top:6px}
+.hero{padding-block:8px 4px;display:flex;flex-direction:column;gap:10px}
+.hero p{max-width:62ch;color:var(--muted)}
+.divider{height:1px;background:var(--line);border:0;margin:4px 0}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:10px 18px;font-weight:600;border:1px solid var(--line-2);background:rgba(241,234,217,.06);transition:background .15s,transform .05s}
+.btn:hover{background:rgba(241,234,217,.12)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--brass);color:var(--brass-ink);border-color:var(--brass)}
+.btn.primary:hover{background:#e6bd68}
+.btn.small{padding:6px 12px;font-size:13px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.link{background:none;border:0;padding:0;color:var(--brass);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+
+/* chips/pills */
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid var(--line-2);color:var(--muted);white-space:nowrap}
+.pill.good{color:var(--good);border-color:color-mix(in srgb,var(--good) 45%,transparent)}
+.pill.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,transparent)}
+.pill.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,transparent)}
+.pill.brass{color:var(--brass);border-color:color-mix(in srgb,var(--brass) 50%,transparent)}
+
+/* playing cards */
+.cards{display:inline-flex;gap:5px;flex-wrap:wrap}
+.pc{width:40px;height:56px;border-radius:6px;background:var(--paper);color:var(--paper-ink);display:inline-flex;flex-direction:column;align-items:center;justify-content:center;font:700 19px/1 var(--f-mono);box-shadow:0 2px 0 rgba(0,0,0,.35),0 4px 10px rgba(0,0,0,.25);position:relative}
+.pc .s{font-size:17px;margin-top:2px;font-family:system-ui,sans-serif}
+.st{font-family:system-ui,sans-serif;font-weight:700}.st.h{color:#ff6b5e}.st.d{color:#7fb0ff}.st.c{color:#5fd28d}.st.s{color:var(--ink)}
+.pc.h{color:var(--s-heart)} .pc.d{color:var(--s-diam)} .pc.c{color:var(--s-club)} .pc.s_{color:var(--s-spade)}
+.pc.back{background:repeating-linear-gradient(45deg,#7a2a22 0 5px,#8e352c 5px 10px);box-shadow:inset 0 0 0 3px var(--paper),0 2px 0 rgba(0,0,0,.35)}
+.pc.sm{width:30px;height:42px;font-size:14px}
+.pc.sm .s{font-size:13px}
+
+/* felt table strip for scenarios */
+.table{border-radius:18px;padding:16px;background:radial-gradient(ellipse at 50% 30%,#1d6a5b,#114237 75%);box-shadow:inset 0 0 0 6px var(--rail-2),inset 0 0 0 7px #000,inset 0 0 40px rgba(0,0,0,.45);display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center}
+.table .slot{display:flex;flex-direction:column;gap:6px;align-items:flex-start;min-width:0}
+.table .slot.mid{align-items:center}
+.table .lab{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:rgba(241,234,217,.65);font-weight:600}
+.table .nums{display:flex;flex-direction:column;gap:4px;align-items:flex-end;text-align:right}
+.table .num{font:700 15px/1.1 var(--f-mono)}
+.table .pos{font:700 12px/1.2 var(--f-body);color:var(--brass);text-align:center}
+@media (max-width:560px){.table{grid-template-columns:1fr 1fr}.table .slot.mid{grid-column:1/-1;order:-1}.table .nums{align-items:flex-start;text-align:left}}
+
+/* question */
+.q-text{font-size:16.5px;line-height:1.6;max-width:68ch;white-space:pre-line}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{display:flex;gap:12px;align-items:flex-start;text-align:left;padding:12px 14px;border-radius:10px;border:1px solid var(--line-2);background:rgba(241,234,217,.04);width:100%}
+.opt:hover:not([disabled]){background:rgba(241,234,217,.09);border-color:var(--brass)}
+.opt .k{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font:700 12px/1 var(--f-mono);border:1px solid var(--line-2);color:var(--muted)}
+.opt.sel{border-color:var(--brass);background:rgba(217,173,85,.12)}
+.opt.sel .k{background:var(--brass);color:var(--brass-ink);border-color:var(--brass)}
+.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}
+.opt.right .k{background:var(--good);color:#0b2a1c;border-color:var(--good)}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+.opt.wrong .k{background:var(--bad);color:#2a0b07;border-color:var(--bad)}
+.opt[disabled]{cursor:default}
+.why{border-left:3px solid var(--brass);padding:10px 14px;background:rgba(217,173,85,.07);border-radius:0 10px 10px 0;max-width:72ch}
+.why.good{border-left-color:var(--good);background:color-mix(in srgb,var(--good) 8%,transparent)}
+.why.bad{border-left-color:var(--bad);background:color-mix(in srgb,var(--bad) 8%,transparent)}
+.conf{display:flex;gap:6px;flex-wrap:wrap}
+.conf button{border:1px solid var(--line-2);background:transparent;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--muted)}
+.conf button[aria-pressed="true"]{background:var(--ink);color:var(--felt);border-color:var(--ink)}
+.progress{height:6px;border-radius:999px;background:rgba(241,234,217,.1);overflow:hidden}
+.progress>i{display:block;height:100%;background:var(--brass);border-radius:999px;transition:width .3s}
+.progress.timer>i{background:var(--good);transition:width .1s linear}
+.progress.timer.low>i{background:var(--bad)}
+
+/* stat tiles */
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat .v{font:700 26px/1.1 var(--f-mono);font-variant-numeric:tabular-nums}
+.stat .l{font-size:12px;color:var(--muted)}
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar{display:grid;grid-template-columns:minmax(90px,150px) 1fr 44px;gap:10px;align-items:center;font-size:13px}
+.bar .t{height:8px;border-radius:999px;background:rgba(241,234,217,.1);overflow:hidden}
+.bar .t i{display:block;height:100%;border-radius:999px}
+.bar .n{font-family:var(--f-mono);text-align:right}
+
+/* checklist */
+.check{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
+.check:last-child{border-bottom:0}
+.check input{margin-top:3px;width:18px;height:18px;accent-color:var(--brass);flex:none}
+.check label{flex:1;min-width:0}
+.check .sub{font-size:13px;color:var(--muted)}
+.check.done label>span:first-child{text-decoration:line-through;color:var(--muted)}
+
+/* range grid */
+.rg-wrap{overflow-x:auto}
+.rg{display:grid;grid-template-columns:repeat(13,minmax(24px,1fr));gap:2px;max-width:560px;user-select:none;-webkit-user-select:none;touch-action:none}
+.rg div{aspect-ratio:1;display:grid;place-items:center;font:600 clamp(8px,1.7vw,11.5px)/1 var(--f-mono);border-radius:3px;background:rgba(241,234,217,.06);color:var(--muted);cursor:pointer;position:relative}
+.rg div.pair{background:rgba(241,234,217,.11)}
+.rg div.on{background:var(--brass);color:var(--brass-ink)}
+.rg div.ok{background:var(--good);color:#0b2a1c}
+.rg div.border-in{background:color-mix(in srgb,var(--warn) 70%,transparent);color:#2a2005}
+.rg div.border-out{background:transparent;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--warn) 70%,transparent);color:var(--warn)}
+.rg div.extra{background:var(--bad);color:#2a0b07}
+.rg div.miss{background:transparent;box-shadow:inset 0 0 0 2px var(--info);color:var(--info)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+/* forms */
+.field{display:flex;flex-direction:column;gap:6px}
+.field label,.field .lbl{font-size:13px;font-weight:600;color:var(--muted)}
+input[type=text],input[type=number],select,textarea{background:rgba(0,0,0,.25);border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:120px;line-height:1.5}
+input[type=range]{width:100%;accent-color:var(--brass)}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1px solid var(--line-2);background:transparent;border-radius:8px;padding:7px 11px;font-size:13.5px;color:var(--muted)}
+.seg button[aria-pressed="true"]{border-color:var(--brass);color:var(--ink);background:rgba(217,173,85,.14)}
+
+/* AI output */
+.ai-out{white-space:pre-wrap;line-height:1.65;max-width:76ch;font-size:15px}
+.ai-out h4{font:700 14px/1.3 var(--f-display);margin:14px 0 4px;color:var(--brass)}
+.chat{display:flex;flex-direction:column;gap:10px}
+.msg{padding:10px 14px;border-radius:12px;max-width:min(76ch,100%);white-space:pre-wrap;line-height:1.6}
+.msg.me{align-self:flex-end;background:rgba(217,173,85,.16);border:1px solid color-mix(in srgb,var(--brass) 40%,transparent)}
+.msg.ai{align-self:flex-start;background:var(--panel);border:1px solid var(--line)}
+
+/* week plan */
+.week{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.week>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--panel)}
+.week>summary::-webkit-details-marker{display:none}
+.week[open]>summary{border-bottom:1px solid var(--line)}
+.week .wb{padding:12px 16px}
+.wk-n{font:800 12px/1 var(--f-display);color:var(--brass);letter-spacing:.06em}
+
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--paper);color:var(--paper-ink);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.4);z-index:50}
+.big-num{font:800 clamp(40px,9vw,64px)/1 var(--f-display);letter-spacing:-.02em}
+.archetype{border:1px solid color-mix(in srgb,var(--brass) 45%,transparent);background:linear-gradient(135deg,rgba(217,173,85,.12),rgba(217,173,85,.02));border-radius:var(--r);padding:18px}
+svg text{font-family:var(--f-body)}
+table.mini{border-collapse:collapse;width:100%;font-size:13.5px}
+table.mini th,table.mini td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.mini th{color:var(--muted);font-weight:600;font-size:12px}
+.scroll-x{overflow-x:auto}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <div class="logo"><span class="chip" aria-hidden="true"></span>ПОКЕРНЫЙ ШТАБ</div>
+      <div class="sync" id="sync"><i></i><span>Прогресс хранится в этом браузере</span></div>
+    </div>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+  </div>
+</header>
+<div class="wrap"><main id="main"></main></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const BANK=[{"id":"math-01","cat":"math","level":1,"pos":"BTN vs BB","hero":"Jh Th","board":"Qd 9c 4s 2h","pot":10,"stack":80,"q":"Тёрн. Банк 10bb, оппонент ставит 5bb (полбанка). Какое минимальное эквити нужно, чтобы колл был безубыточным (без учёта будущих улиц)?","opts":["50%","33%","20%","25%"],"ans":3,"why":"Ты платишь 5, чтобы выиграть итоговый банк 10 + 5 + 5 = 20. Требуемое эквити = колл / итоговый банк = 5/20 = 25%. Частая ошибка — делить колл на банк до своего колла (5/15 = 33%). Держи в голове опорные точки: ставка 1/2 банка → 25%, 2/3 → 28.6%, банк → 33%, 2 банка → 40%. Кстати, у тебя здесь OESD (8 аутов ≈ 17%) — без имплайд-оддсов это фолд.","tag":"пот-оддсы"},{"id":"math-02","cat":"math","level":1,"pos":"BB vs BTN","hero":"","board":"","pot":null,"stack":null,"q":"Ривер. Оппонент ставит 3/4 банка. Какую минимальную долю своего диапазона ты должен продолжать (MDF), чтобы его блеф любыми двумя картами не был автоматически прибыльным?","opts":["57%","50%","75%","43%"],"ans":0,"why":"Блеф оппонента рискует 0.75 банка, чтобы выиграть 1 банк, поэтому ему нужно 0.75/1.75 ≈ 43% фолдов. MDF — дополнение до 100%: 1/(1 + 0.75) ≈ 57%. Формула MDF = банк / (банк + ставка). Помни, что MDF — ориентир против сбалансированного оппонента; против того, кто недоблефовывает, можно фолдить чаще.","tag":"MDF"},{"id":"math-03","cat":"math","level":2,"pos":"","hero":"","board":"","pot":null,"stack":null,"q":"Ты ставишь на ривере 2/3 банка поляризованным диапазоном. В нём 20 вэлью-комбо. Сколько блеф-комбо нужно добавить, чтобы оппоненту было безразлично, коллировать блефкэтчером или нет?","opts":["10","8","20","13"],"ans":1,"why":"Сначала считаем, сколько эквити нужно коллеру: он платит 2/3, чтобы выиграть 1 + 2/3 + 2/3 = 7/3, то есть (2/3)/(7/3) = 2/7 ≈ 28.6%. Значит, блефы должны составлять 2/7 диапазона ставки, а вэлью — 5/7; соотношение блеф:вэлью = 2:5. При 20 вэлью-комбо это 20 × 2/5 = 8 блефов. Ответ 10 был бы верен для ставки в банк (1:2).","tag":"соотношение блефа и вэлью"},{"id":"math-04","cat":"math","level":1,"pos":"BTN vs BB","hero":"","board":"","pot":9,"stack":90,"q":"Банк 9bb. Ты хочешь поставить 6bb чистым блефом (с нулевым эквити). Как часто оппонент должен фолдить, чтобы блеф был безубыточным?","opts":["40%","60%","67%","33%"],"ans":0,"why":"Чистый блеф рискует ставку, чтобы выиграть банк: нужная доля фолдов = ставка / (банк + ставка) = 6 / (9 + 6) = 40%. Это зеркало пот-оддсов коллера: он получает 15 к 6, то есть ему нужно 40% эквити против твоего блефа. Если у твоей руки есть эквити (дро), нужная фолд-эквити ниже.","tag":"фолд-эквити"},{"id":"math-05","cat":"math","level":2,"pos":"BTN vs BB","hero":"Ah 8h","board":"Kh 9h 4c 2s","pot":30,"stack":15,"q":"Тёрн. У тебя натсовое флеш-дро (считаем 9 чистых аутов). Банк 30bb, оппонент идёт олл-ин на 15bb (больше фишек нет). Что верно?","opts":["Эквити ≈ 36% (правило 4) — колл","Эквити ≈ 19.6%, нужно 25% — фолд","Эквити ≈ 19.6%, нужно 20% — колл","Эквити ≈ 25% — колл безубыточен"],"ans":1,"why":"До ривера одна карта, поэтому эквити = 9/46 ≈ 19.6% (правило 2 даёт ≈ 18%). Колл 15bb в итоговый банк 30 + 15 + 15 = 60bb требует 15/60 = 25%. Оппонент уже олл-ин, имплайд-оддсов нет, так что колл в минус. Правило 4 применяется только на флопе, когда впереди две карты и оппонент олл-ин.","tag":"ауты и пот-оддсы"},{"id":"math-06","cat":"math","level":2,"pos":"BTN vs BB","hero":"Kh Qh","board":"As 7d 2c","pot":null,"stack":null,"q":"Считаем, что вэлью-диапазон оппонента на этом флопе — AA, 77, 22 и AK (все масти). У тебя K♥Q♥. Сколько у него вэлью-комбинаций?","opts":["18","15","21","24"],"ans":0,"why":"Считаем с учётом карт на столе и твоих блокеров. AA: на борде лежит A♠, осталось 3 туза → C(3,2) = 3 комбо. 77 и 22: аналогично по 3. AK: 3 туза × 3 короля (K♥ у тебя) = 9 вместо 16. Итого 3 + 3 + 3 + 9 = 18. Твой K♥ убрал 3 комбо AK — блокеры заметно меняют пропорции диапазона.","tag":"подсчёт комбо"},{"id":"math-07","cat":"math","level":3,"pos":"BB vs BTN","hero":"Jh Th","board":"Qd 9c 4s 2h","pot":10,"stack":80,"q":"Тёрн. У тебя OESD (8 аутов, эквити ≈ 8/46 ≈ 17%). Банк 10bb, оппонент ставит 5bb. Какую сумму в среднем нужно дополнительно выигрывать на ривере, когда доезжаешь, чтобы колл стал безубыточным?","opts":["~9bb","~25bb","~15bb","~4bb"],"ans":0,"why":"Составим уравнение EV: при попадании (8/46) выигрываешь 10 + 5 = 15bb плюс X на ривере, при промахе (38/46) теряешь 5bb. 8 × (15 + X) = 38 × 5 = 190 → 15 + X = 23.75 → X ≈ 8.75bb. Нужно добирать около 9bb (чуть больше половины текущего банка) — реалистично против стики-оппонента, сомнительно против того, кто хорошо читает доехавшие дро.","tag":"имплайд-оддсы"},{"id":"math-08","cat":"math","level":2,"pos":"BTN vs BB","hero":"9h 8h","board":"7h 6c 2h","pot":null,"stack":null,"q":"Флоп. У тебя 9♥8♥ на 7♥6♣2♥. Сколько у тебя аутов на флеш или стрит (без двойного счёта)?","opts":["15","17","12","13"],"ans":0,"why":"Флеш: 13 червей − 2 у тебя − 2 на борде = 9 аутов. Стрит: десятки и пятёрки = 8 карт, но T♥ и 5♥ уже посчитаны во флеше, поэтому добавляем 6. Итого 15 аутов. До ривера это ≈ 54% (точный расчёт: 1 − 32/47 × 31/46). Правило 4 даёт 60% и при большом числе аутов переоценивает эквити.","tag":"подсчёт аутов"},{"id":"math-09","cat":"math","level":3,"pos":"BTN vs BB","hero":"","board":"","pot":10,"stack":45,"q":"Банк на флопе 10bb, эффективный стек 45bb. Какой примерно одинаковый сайзинг (в % от банка) на флопе, тёрне и ривере доводит до олл-ина ровно к ривере (геометрический сайзинг)?","opts":["~58%","~75%","~33%","~100%"],"ans":0,"why":"Итоговый банк при олл-ине: 10 + 2 × 45 = 100bb, то есть банк должен вырасти в 10 раз за три улицы. Каждая ставка f (доля банка) с коллом умножает банк на (1 + 2f), значит (1 + 2f)³ = 10 → 1 + 2f ≈ 2.154 → f ≈ 0.58. Проверка: 10 → 21.5 → 46.4 → 100. Геометрический сайзинг максимизирует давление при поляризованном диапазоне.","tag":"геометрический сайзинг"},{"id":"math-10","cat":"math","level":2,"pos":"BB vs BTN","hero":"","board":"","pot":30,"stack":30,"q":"Ривер. Банк 30bb, оппонент идёт олл-ин на 30bb. Ты оцениваешь, что он блефует в 40% случаев, а твой блефкэтчер бьёт только блефы. Каково EV колла?","opts":["0","+12bb","+6bb","−6bb"],"ans":2,"why":"EV(колл) = P(блеф) × (банк + его ставка) − P(вэлью) × колл = 0.4 × 60 − 0.6 × 30 = 24 − 18 = +6bb. Проверка через пот-оддсы: нужно 30/90 ≈ 33%, а у тебя 40% — колл в плюс. Считать EV в бб полезно: сразу видно, насколько решение важное, а не только его знак.","tag":"EV"},{"id":"ranges-01","cat":"ranges","level":2,"pos":"BTN vs BB","hero":"","board":"Kd 7c 2s","pot":null,"stack":null,"q":"100bb. Ты открылся с BTN, BB заколлировал. Флоп K♦7♣2♠, ты ставишь 33%, BB делает чек-рейз. Какая категория рук МЕНЕЕ всего вероятна в его диапазоне чек-рейза?","opts":["Слабые руки с бэкдор-дро (6♠5♠, 5♦4♦) как блефы","77 / 22 (сеты)","K7s / K2s (две пары)","AK"],"ans":3,"why":"Начинай чтение диапазона с префлопа. Против открытия BTN игрок с BB 3-бетит AK практически всегда, поэтому в его колл-диапазоне AK почти нет. Сеты 77/22 и одномастные K7/K2 у него есть, а блефы с бэкдорами — стандартная часть сбалансированного чек-рейза. Вывод: на K72r чек-рейз BB поляризован — сеты, две пары и полублефы, без топ-пары с топ-кикером.","tag":"чтение диапазона"},{"id":"ranges-02","cat":"ranges","level":2,"pos":"","hero":"Th Tc","board":"Qs Jh 4d 9c 2s","pot":null,"stack":null,"q":"У тебя T♥T♣. Ривер Q♠J♥4♦9♣2♠. Если KT целиком входит в диапазон оппонента, сколько у него комбинаций стрита KT?","opts":["4","16","12","8"],"ans":3,"why":"Без блокеров KT — это 16 комбо (4 × 4). Но две десятки у тебя на руках, значит у оппонента может быть только T♠ или T♦: 4 короля × 2 десятки = 8 комбо. Твоя рука вдвое сократила его самый сильный стрит — это важный аргумент в пользу колла блефкэтчером или тонкого вэлью-бета.","tag":"блокеры"},{"id":"ranges-03","cat":"ranges","level":1,"pos":"BTN vs BB","hero":"","board":"9s 8s 2d 4h","pot":null,"stack":null,"q":"Оппонент-рег на тёрне 9♠8♠2♦4♥ ставит овербет 150% банка. Как лучше всего описать его диапазон?","opts":["Мерджед: от слабых пар до натсов в равных долях","Только дро: сильные руки он чекал бы в ловушку","Сжатый: в основном средние пары вроде 9x со слабым кикером","Поляризованный: сильные руки (сеты, две пары, сильные оверпары) + дро и блефы"],"ans":3,"why":"Большой сайзинг почти всегда означает поляризацию: овербетить выгодно рукам, которые хотят максимального банка, и блефам, которым нужна максимальная фолд-эквити. Средние руки вроде слабой 9x не хотят раздувать банк: против овербета их обыгрывает всё, что заколлирует. Поэтому середина диапазона у овербетящего рега почти отсутствует.","tag":"поляризация"},{"id":"ranges-04","cat":"ranges","level":2,"pos":"BTN vs BB","hero":"","board":"Ts 9s 3h 2c As","pot":null,"stack":null,"q":"Ты BTN. Флоп T♠9♠3♥: BB чек, ты ставишь 33%, BB коллирует. Тёрн 2♣: чек, ты ставишь 75%, колл. Ривер A♠, BB лидирует 75% банка. Какая категория рук составляет основную часть его вэлью?","opts":["T9 — две пары с флопа","Флеши — пиковые дро, которые доехали","Ax — топ-пара, пришедшая на ривере","Сеты 33/22"],"ans":1,"why":"Восстанавливаем линию: коллы флопа и тёрна на T♠9♠ двухмастке дают диапазон с большим количеством пиковых дро. A♠ замыкает флеш, и у BB появилось много флешей, а лид в незащищённую позицию типичен для того, у кого ривер улучшил диапазон. T9 и сеты часто чек-рейзили бы раньше, а Ax без пик редко доживает до ривера после двух коллов. Значит, его вэлью — в основном флеши.","tag":"чтение линии"},{"id":"ranges-05","cat":"ranges","level":2,"pos":"BB vs BTN","hero":"","board":"Kc 7d 2h 5s","pot":null,"stack":null,"q":"Ты BB. Флоп K♣7♦2♥: ты чек, BTN чекает в ответ (на этой текстуре BTN обычно ставит маленьким сайзингом почти весь диапазон). Тёрн 5♠. Как лучше описать диапазон BTN?","opts":["Ограниченный (capped): в основном средние и слабые пары, A-хай и воздух, сильных Kx мало","Поляризованный: натсы и воздух без середины","Только воздух","Сильный: много Kx и сетов, которые он слоуплеит"],"ans":0,"why":"Задай себе вопрос: что делает этот игрок с сильными руками на этой улице? На K72r BTN выгодно ставить почти всё, особенно Kx, которым нужна защита и вэлью. Чек-бэк убирает большую часть сильных рук, и диапазон становится ограниченным (capped), хотя редкие ловушки остаются. Это повод для BB активно ставить на тёрне (probe) с вэлью и блефами.","tag":"capped-диапазон"},{"id":"ranges-06","cat":"ranges","level":2,"pos":"BB vs UTG","hero":"","board":"7h 6h 5c","pot":null,"stack":null,"q":"UTG открывается (диапазон около 15%), ты коллируешь с BB. Флоп 7♥6♥5♣. У кого преимущество в натсах (стриты, сеты, две пары)?","opts":["У BB: в его защите больше стритов (98, 84s, 43s) и двух пар (76, 75, 65)","У UTG: у него больше оверпар","Примерно поровну: у обоих много сетов","У UTG: его префлоп-диапазон сильнее"],"ans":0,"why":"Разделяй преимущество по эквити и по натсам. Узкий диапазон UTG состоит из бродвеев и пар: оверпары дают ему эквити, но стритов и двух пар у него мало. Широкая защита BB включает стриты 98, 84s, 43s и заметно больше комбинаций двух пар 76/75/65 — на этой текстуре у него больше натсов. Поэтому префлоп-рейзер здесь ставит реже, а BB может чаще чек-рейзить.","tag":"преимущество в натсах"},{"id":"ranges-07","cat":"ranges","level":1,"pos":"CO vs UTG (лимпер)","hero":"","board":"","pot":null,"stack":null,"q":"Микролимиты. Пассивный любитель (VPIP 30 / PFR 4) лимпит с UTG. Ты рейзишь с CO до 4bb, он делает лимп-рейз до 14bb. Из чего в основном состоит его диапазон?","opts":["Широкий диапазон блефов: лимп-рейз — это трюк","AA/KK (иногда QQ/AK)","Средние пары, которые не хотят играть постфлоп","Одномастные коннекторы"],"ans":1,"why":"Соотнеси действие с профилем: игрок с PFR 4% почти никогда не проявляет агрессию префлоп, и лимп-рейз для него — самая редкая и самая сильная линия. Среди пассивных любителей лимп-рейз — это классическая ловушка с AA/KK. QQ/JJ и AK здесь в лучшем случае маргинальны, а блефы встречаются крайне редко.","tag":"диапазон по профилю"},{"id":"ranges-08","cat":"ranges","level":1,"pos":"SB vs BTN","hero":"","board":"","pot":null,"stack":null,"q":"100bb. BTN открывается, SB делает 3-бет, BTN коллирует (не 4-бетит). Как лучше всего описать колл-диапазон BTN?","opts":["Случайные руки","Поляризованный: AA/KK + слабые блефы","Только премиум: он слоуплеит в позиции","Сжатый (condensed): средние пары, одномастные бродвеи, одномастные Ax; верх в основном уходит в 4-бет, мусор — в фолд"],"ans":3,"why":"Разложи диапазон по трём действиям: 4-бет забирает большую часть верха (KK+, часть AK) и блефы с блокерами, фолд — слабые руки. Коллируют руки средней силы с хорошей играбельностью в позиции: 99–TT, AQs, KQs, JTs и т.п. Такой сжатый диапазон редко имеет натсы на флопе, но и редко полный воздух — это определяет сайзинги 3-беттора.","tag":"сжатый диапазон"},{"id":"ranges-09","cat":"ranges","level":3,"pos":"","hero":"","board":"Kc 9d 5h","pot":null,"stack":null,"q":"Допустим, вэлью-часть чек-рейза оппонента на флопе K♣9♦5♥ — это сеты (KK, 99, 55) и только одномастные K9s и 95s (разномастные он сбросил префлоп). Сколько это комбинаций?","opts":["17","11","15","13"],"ans":3,"why":"Сеты: по одной карте каждого достоинства на борде, осталось по 3 → C(3,2) = 3 комбо на каждый сет, итого 9. K9s: трефовый король и бубновая девятка на борде, поэтому возможны только пики и черви → 2 комбо. 95s: девятка бубен и пятёрка червей на борде, остаются трефы и пики → 2 комбо. Итого 9 + 2 + 2 = 13. Одномастные руки особенно сильно страдают от карт на борде.","tag":"подсчёт комбо"},{"id":"ranges-10","cat":"ranges","level":1,"pos":"UTG vs BTN, BB (мультивей)","hero":"","board":"Ah Kd 4s","pot":null,"stack":null,"q":"100bb. UTG открывается, BTN коллирует, BB коллирует. Флоп A♥K♦4♠. В чьём диапазоне больше всего AA/KK/AK?","opts":["Примерно поровну","У BTN — он в позиции","У BB — у него самый широкий диапазон","У UTG"],"ans":3,"why":"Вспомни, какие руки каждый игрок 3-бетит префлоп. BTN и BB против открытия почти всегда 3-бетят AA, KK и AK, поэтому в их колл-диапазонах этих рук почти нет — они ограничены сверху. У UTG все эти комбинации остаются в диапазоне открытия. Значит, на A-K-x мультивей преимущество в натсах у префлоп-рейзера.","tag":"capped-диапазон"},{"id":"postflop-01","cat":"postflop","level":1,"pos":"BTN vs BB","hero":"","board":"Ks 7d 2c","pot":5.5,"stack":97.5,"q":"SRP, 100bb. Ты открылся с BTN, BB заколлировал и чекает. Флоп K♠7♦2♣. Какая стратегия c-bet оптимальна для твоего диапазона?","opts":["Ставить 75% только с сильными руками и дро, остальное чекать","Овербет 150% поляризованным диапазоном","Чекать весь диапазон: BB много защищает","Маленький сайзинг (25–33%) с очень высокой частотой"],"ans":3,"why":"Оцени текстуру: сухой борд с высокой картой, без дро. У BTN преимущество и по эквити (больше Kx и оверпар), и по натсам (KK/AK BB обычно 3-бетит). Когда защищать нечего, а преимущество у тебя, маленькая ставка выгодна почти со всем диапазоном: оппоненту приходится фолдить много слабых рук или коллировать с плохими оддсами.","tag":"размер ставки"},{"id":"postflop-02","cat":"postflop","level":2,"pos":"BTN vs BB","hero":"","board":"6h 5h 4c","pot":5.5,"stack":97.5,"q":"SRP, 100bb, BTN vs BB. Флоп 6♥5♥4♣, BB чекает. Как должна выглядеть стратегия BTN по сравнению с бордом K72r?","opts":["Снизить частоту c-bet: чекать значительную часть диапазона, ставить более поляризованно","Ставить 33% почти весь диапазон, как на K72r","Ставить только с сетами и стритами","Всегда ставить банк, чтобы защитить оверпары"],"ans":0,"why":"Низкий связанный борд попадает в диапазон защиты BB: стриты (87, 73s, 32s), две пары (65, 64, 54) и сеты. Преимущество по натсам переходит к BB, а оверпары BTN уязвимы и не любят чек-рейз. Поэтому IP-рейзер чекает гораздо чаще и не ставит весь диапазон маленьким сайзингом. Принцип: частота c-bet зависит от того, у кого преимущество по диапазону и натсам на конкретной текстуре.","tag":"текстура борда"},{"id":"postflop-03","cat":"postflop","level":2,"pos":"BTN vs BB","hero":"","board":"Ks 7d 2c","pot":null,"stack":null,"q":"SRP. Флоп K♠7♦2♣: ты (BTN) ставишь 33%, BB коллирует. Какая карта тёрна лучше всего подходит для второго барреля широким диапазоном?","opts":["7♥","6♦","5♣","A♥"],"ans":3,"why":"Думай о том, чей диапазон улучшает карта. Туз попадает в диапазон BTN: AK, AA (BB обычно 3-бетит их префлоп) и много Ax-бродвеев, а у BB, который просто коллирует, сильных Ax мало. Шестёрка и пятёрка соединяются с коллирующим диапазоном BB (65, 64, 54, 86s, сеты), а спаривание семёркой довольно нейтрально. Лучшие карты для баррелей — те, что усиливают твой диапазон относительно диапазона оппонента.","tag":"баррели на тёрне"},{"id":"postflop-04","cat":"postflop","level":3,"pos":"BTN vs BB","hero":"","board":"Qc 9h 5h 2s 3h","pot":null,"stack":null,"q":"SRP. Флоп Q♣9♥5♥: ты c-bet 33%, BB колл. Тёрн 2♠: чек-чек. Ривер 3♥ (замкнулся флеш), BB чекает. Какую руку из своего диапазона лучше всего выбрать для блефа?","opts":["A♥K♠","Q♠J♠","8♦7♦","J♣T♣"],"ans":0,"why":"Хорошему блефу нужны слабая шоудаун-велью и полезные блокеры. Q♠J♠ — топ-пара, она выигрывает на вскрытии, её не нужно превращать в блеф. A♥K♠ блокирует натсовый флеш, поэтому оппонент не может иметь A♥x♥ и реже имеет самые сильные руки для колла или чек-рейза, а твоя ставка правдоподобно выглядит как флеш. J♣T♣ и 8♦7♦ ничего полезного не блокируют, поэтому как блефы они слабее.","tag":"блокеры"},{"id":"postflop-05","cat":"postflop","level":2,"pos":"BTN vs BB","hero":"Kd Td","board":"Ks 8d 4c 2h 6s","pot":10,"stack":95.5,"q":"SRP. Флоп K♠8♦4♣: ты c-bet 33%, BB колл. Тёрн 2♥: чек-чек. Ривер 6♠, BB снова чекает. У тебя K♦T♦. Что лучше?","opts":["Овербет 150%","Чек: показать руку на вскрытии бесплатно","Бет 33–50% для тонкого вэлью","Олл-ин"],"ans":2,"why":"Спроси себя, какие худшие руки заплатят. Диапазон BB после двух чеков ограничен: много 8x, 4x, 6x, пар 55–77 и слабых Kx (K5, K3, K9 и т.п.), а твоя K♦T♦ бьёт большую их часть. Небольшая ставка получает коллы от этих рук, а сильные руки (сеты, две пары) BB обычно разыграл бы иначе раньше. Овербет оставит в колле только то, что тебя бьёт.","tag":"тонкое вэлью"},{"id":"postflop-06","cat":"postflop","level":3,"pos":"BB vs BTN","hero":"Ts 8s","board":"9s 7d 3c 2h 6d","pot":10,"stack":95.5,"q":"SRP. Ты BB. Флоп 9♠7♦3♣: чек, BTN ставит 33%, ты коллируешь с T♠8♠. Тёрн 2♥: чек-чек. Ривер 6♦ — у тебя натсовый стрит. Твоё действие?","opts":["Лид овербетом ~125% банка","Лид 25–33%","Чек-колл","Чек с планом чек-рейза"],"ans":0,"why":"Сравни диапазоны на ривере. Чек-бэк BTN на тёрне убирает из его диапазона большую часть сетов, двух пар и сильных оверпар, которые ставили бы для вэлью и защиты, поэтому его диапазон ограничен. Твой диапазон содержит натсы и сильные стриты (T8, 85, 54), и это делает уместным поляризованный большой лид. Если чекнуть, ограниченный диапазон BTN часто тоже чекнет, и вэлью будет упущено.","tag":"овербет"},{"id":"postflop-07","cat":"postflop","level":1,"pos":"BB vs BTN","hero":"Ad 9c","board":"Kh 9d 5s 3c 2h","pot":20,"stack":70,"q":"Ривер. Банк 20bb, оппонент ставит 5bb (25% банка). У тебя вторая пара с тузом-кикером. Что делать?","opts":["Фолд: на ривере он ставит только вэлью","Рейз для вэлью","Колл"],"ans":2,"why":"Сначала считай цену: колл 5bb в итоговый банк 30bb требует всего 16.7% эквити, а MDF против 1/4 банка — 80%. Даже если блефов в диапазоне оппонента немного, с такими оддсами вторая пара — обязательный колл. Рейз превращает руку в блеф: заколлирует то, что тебя бьёт, а сфолдят блефы.","tag":"блефкэтчинг"},{"id":"postflop-08","cat":"postflop","level":2,"pos":"BTN vs CO (3-бет пот)","hero":"Qh Qd","board":"Jd 7c 2s","pot":17.5,"stack":32,"q":"3-бет пот, эффективный стек 40bb: CO открылся на 2.5bb, ты 3-бетнул с BTN до 8bb, CO заколлировал. Банк 17.5bb, за спиной 32bb (SPR ≈ 1.8). Флоп J♦7♣2♠, CO чекает. У тебя QQ. План?","opts":["Бет ~1/3 банка и готовность поставить весь стек при любом ответе","Чек назад для контроля банка","Бет и фолд на чек-рейз","Чек и фолд на ставку тёрна"],"ans":0,"why":"Первым делом посмотри на SPR. При SPR около 1.8 оверпара — рука для стека: оппонент заколлирует или пойдёт олл-ин с Jx, 77, дро и худшими парами, а фолд на чек-рейз при таком банке почти всегда ошибка (нужно лишь около 25% эквити). Чем ниже SPR, тем меньше нужна сила руки для олл-ина. Небольшая ставка всё равно позволяет вложить стек за две улицы.","tag":"SPR"},{"id":"postflop-09","cat":"postflop","level":2,"pos":"BTN vs BB","hero":"","board":"Ks Th 6h 2c 4h","pot":28,"stack":70,"q":"Ты BTN, ставил флоп и тёрн, BB коллировал. Ривер 4♥ замкнул флеш, BB лидирует 75% банка. У тебя топ-пара, и ты решил коллировать. С какой рукой колл лучше всего?","opts":["A♥K♣","K♦J♦","K♣Q♣"],"ans":0,"why":"Хороший блефкэтчер блокирует вэлью оппонента и не блокирует его блефы. Его вэлью здесь — в основном флеши, и A♥ убирает все комбинации натсового флеша, а A♥K♣ к тому же — сильнейшая топ-пара. K♣Q♣ и K♦J♦ блокируют недоехавшие стрит-дро (QJ, Q9, J9), то есть именно блефы оппонента; A♥K♣ тоже блокирует часть блефов (AQ, AJ), но эффект от A♥ гораздо важнее. Это делает их хуже как коллы.","tag":"блокеры"},{"id":"postflop-10","cat":"postflop","level":1,"pos":"UTG vs BTN, BB (мультивей)","hero":"Ac Qd","board":"Jh 8h 4s","pot":8,"stack":97.5,"q":"100bb. Ты открылся с UTG, BTN и BB заколлировали. Флоп J♥8♥4♠, BB чекает. У тебя A♣Q♦ (ни пары, ни дро). Что лучше?","opts":["Чек с планом чек-рейза","C-bet 33%: у меня инициатива","Бет 75%, чтобы выбить дро","Чек, и в основном сдаться против ставки"],"ans":3,"why":"В мультивее нужно учитывать сразу два диапазона. Шанс, что хотя бы один из двух оппонентов попал в этот связанный борд, высокий, а блеф должен пройти через обоих. У A♣Q♦ нет бэкдор-флеша, нет стрит-дро, а оверкарты часто не чистые. Мультивей c-bet должен быть тяжелее по вэлью, а чистый воздух без эквити — чек.","tag":"мультивей"},{"id":"exploit-01","cat":"exploit","level":1,"pos":"BTN vs BB","hero":"Qh Jh","board":"Kh 9h 4c 7s 2d","pot":20,"stack":80,"q":"Оппонент — колл-станция: VPIP 55 / PFR 8, WTSD 42%, на ставку на ривере фолдит около 20%. Ты ставил флоп и тёрн, он коллировал. Ривер 2♦ — твоё флеш-дро и гатшот не доехали. Он чекает. Действие?","opts":["Маленький блеф 33% — это дёшево","Блеф овербетом — уж это он сфолдит","Чек, сдаться","Блеф 75% банка"],"ans":2,"why":"Блеф выгоден, только если оппонент фолдит чаще, чем требует сайзинг: 33% банка требует 25% фолдов, 75% — 43%. Этот игрок фолдит около 20% и коллирует по силе руки, а не по сайзингу, поэтому любой блеф теряет деньги. Против колл-станции эксплойт простой: максимальное вэлью и минимум блефов.","tag":"против колл-станции"},{"id":"exploit-02","cat":"exploit","level":2,"pos":"BTN vs CO","hero":"Kh 9h","board":"","pot":4,"stack":100,"q":"100bb. Рег на CO открывается около 30% рук и фолдит на 3-бет 78% (выборка большая). Ты на BTN с K♥9♥. Лучший эксплойт?","opts":["Фолд: K9s слабая рука","Олл-ин 100bb","Колл в позиции","3-бет до ~7.5–8bb"],"ans":3,"why":"Посчитай, сколько стоит блеф: 3-бет до 8bb рискует 8, чтобы выиграть ~4bb мёртвых денег, то есть нужно около 67% фолдов. Здесь их 78%, и 3-бет прибылен ещё до учёта эквити K9s и игры в позиции после колла. Против опенера, который перефолдивает на 3-бет, расширяй 3-бет-блефы руками с блокерами и играбельностью.","tag":"перефолд на 3-бет"},{"id":"exploit-03","cat":"exploit","level":2,"pos":"BTN vs BB","hero":"Kd Qd","board":"Ks Qc 7d 4h 9s","pot":30,"stack":70,"q":"Пассивный любитель: AF 1.1, за 4000 рук ни разу не показал рейз на ривере без натсов. Ривер K♠Q♣7♦4♥9♠. Ты ставишь 20bb в банк 30bb с топ-двумя парами, он рейзит до 60bb. Действие?","opts":["Колл: у меня топ-две пары","Фолд","Олл-ин: так он может играть и две пары"],"ans":1,"why":"Пот-оддсы хорошие: колл 40bb в итоговый банк 150bb требует около 27%. Но важно, есть ли у этого игрока в такой линии хоть какие-то блефы и худшие руки. При его профиле рейз на ривере — это JT (стрит), сеты 99/77/44, а рук, которые проигрывают K♦Q♦, там почти нет. Если блефов около 0%, никакие оддсы не спасают колл. Это классический эксплойт: пассивная популяция сильно недоблефовывает рейзами на ривере.","tag":"недоблеф на ривере"},{"id":"exploit-04","cat":"exploit","level":2,"pos":"BB vs BTN","hero":"Kh Jd","board":"Kc 8s 3d 2h","pot":9,"stack":96,"q":"Оппонент на BTN — маньяк: AF 5, ставит в чек около 85% на любой улице и часто баррелит воздухом. Ты защитил BB, флоп K♣8♠3♦ — чек-колл. Тёрн 2♥, у тебя топ-пара K♥J♦. Что лучше?","opts":["Чек-фолд: раз он ставит, значит силён","Чек-рейз олл-ин","Донк 75% для защиты","Чек, с планом коллировать"],"ans":3,"why":"Подумай, как сделать так, чтобы ошибки совершал оппонент. Если ты ставишь сам, маньяк выкинет воздух и продолжит только с тем, что тебя бьёт. Если чекаешь, его воздух сам ставит в тебя. Чек-рейз превращает топ-пару в блеф. Против гиперагрессора с блефкэтчером лучше отдать ему инициативу и коллировать.","tag":"против маньяка"},{"id":"exploit-05","cat":"exploit","level":2,"pos":"BTN vs CO","hero":"8s 7s","board":"Qd 6c 2h","pot":6.5,"stack":97.5,"q":"CO открылся, ты заколлировал на BTN. Статистика CO: c-bet флоп 85%, c-bet тёрн 28%, фолд на ставку на тёрне после своего чека 70%. Флоп Q♦6♣2♥, он ставит 1/3 банка. У тебя 8♠7♠ (бэкдор-стрит). Лучший эксплойт?","opts":["Колл, а на тёрне чек-бэк, если он чекнет","Фолд: ни пары, ни дро","Рейз флопа","Колл (флот) с планом ставить, когда он чекнет тёрн"],"ans":3,"why":"Ищи несоответствие в статистике: на флопе он ставит почти всё, а на тёрне продолжает лишь с 28% — значит, флоп-ставка содержит много воздуха, который потом сдаётся. Дешёвый колл в позиции и ставка после его чека на тёрне используют его фолд 70%. Рейз флопа хуже: его диапазон ещё целый, а заставить его фолдить можно дешевле на тёрне.","tag":"флот"},{"id":"exploit-06","cat":"exploit","level":2,"pos":"BB vs BTN","hero":"Jc 9c","board":"Jh 8h 3c 5s 2d","pot":24,"stack":70,"q":"Любитель. За 300 рук ты несколько раз видел на вскрытии: с сильными готовыми руками он ставит 1/3–1/2 банка, а большие ставки (банк и больше) делает с дро и блефами. Ривер J♥8♥3♣5♠2♦ (флеш-дро не доехало), он ставит банк. У тебя топ-пара со слабым кикером. Действие?","opts":["Колл","Фолд: ставка в банк означает силу","Рейз олл-ин, чтобы выбить его"],"ans":0,"why":"Сайзинг-телл переворачивает обычную логику: у этого игрока большая ставка означает слабость. На ривере, где флеш-дро не доехало, ставка в банк особенно похожа на попытку сыграть промазавшим дро. Колл J9 требует 33% эквити, и здесь он прибыльный. Рейз хуже: блефы просто сфолдят, а заплатят только руки, которые тебя бьют.","tag":"сайзинг-телл"},{"id":"exploit-07","cat":"exploit","level":1,"pos":"BTN vs UTG (лимпер)","hero":"Kc Td","board":"","pot":2.5,"stack":100,"q":"Любитель: VPIP 45 / PFR 5, лимпит около 35% рук, на изо-рейз коллирует почти всегда, постфлоп играет fit-or-fold (фолд на c-bet 65%). Он лимпит с UTG, все фолдят до тебя на BTN. У тебя K♣T♦. Лучший эксплойт?","opts":["Фолд: KTo — слабая рука","Изо-рейз до ~5bb, с широким диапазоном (KTo, Ax, бродвеи, одномастные коннекторы)","Мин-рейз до 2bb","Лимпнуть следом и посмотреть флоп"],"ans":1,"why":"Выгода исходит из двух ошибок оппонента: он лимпит слабым диапазоном и потом слишком часто фолдит на c-bet. Изо-рейз в позиции с рукой лучше его диапазона даёт хеды против слабого игрока с инициативой. Крупный сайзинг уместен, потому что он всё равно коллирует. Лимп отдаёт инициативу и приглашает блайнды, а мин-рейз даёт ему отличные оддсы.","tag":"изоляция"},{"id":"exploit-08","cat":"exploit","level":2,"pos":"BTN vs UTG","hero":"Ac Kd","board":"","pot":31.5,"stack":100,"q":"Нит-рег: 4-бет 1.5%, за 5000 рук 4-бетил только AA и KK. Он открылся с UTG на 2.5bb, ты 3-бетнул с BTN до 8bb, он 4-бетнул до 22bb. У тебя A♣K♦. Лучший эксплойт?","opts":["5-бет олл-ин: AK слишком силён для фолда","Колл и олл-ин на любом флопе","Фолд","Колл и играть постфлоп"],"ans":2,"why":"Сначала сузь его диапазон и посчитай комбо: с твоими блокерами у него 3 комбо AA и 3 комбо KK. Эквити AKo примерно 12% против AA и 30% против KK, в среднем около 21%, а олл-ину нужно примерно 45% (92bb, чтобы выиграть ~201bb). Колл с SPR около 1.7 тоже минусовый: против AA ты почти никогда не выигрываешь, а KK на тузовом флопе не заплатит. Против сбалансированного рега AK — 5-бет или колл, против этого нита — фолд.","tag":"против нита"},{"id":"exploit-09","cat":"exploit","level":2,"pos":"BTN vs BB","hero":"Ah 4h","board":"Kh 9h 5c 2s 7h","pot":30,"stack":75,"q":"Оппонент — колл-станция: на ривере коллирует с любой парой почти независимо от сайзинга. Ривер K♥9♥5♣2♠7♥, ты собрал натсовый флеш A♥4♥, он чекает. Банк 30bb, стек 75bb. Сайзинг?","opts":["Бет 66%","Олл-ин ~75bb (2.5 банка)","Бет 33%: чтобы точно заколлировал","Чек: пусть ставит сам"],"ans":1,"why":"Задай себе вопрос: от чего зависит, заколлирует ли этот игрок? Если ответ — от силы руки, а не от размера ставки (неэластичный колл), каждый его колл должен стоить максимально. Против сбалансированного игрока огромная ставка сократила бы его колл-диапазон, но эта станция с Kx и даже 9x всё равно заплатит. Чек — риск, что пассивный игрок тоже чекнет.","tag":"сайзинг для вэлью"},{"id":"exploit-10","cat":"exploit","level":2,"pos":"CO vs SB","hero":"Th Tc","board":"","pot":33.5,"stack":30,"q":"Обычно тайтовый игрок в SB только что проиграл крупный банк и явно тильтует: за последний круг 3-бет-шовнул три раза. Стек у него 30bb, у тебя больше. Ты открылся с CO до 2.5bb, он шовит 30bb, BB фолдит. У тебя TT. Действие?","opts":["Фолд: шов из SB от тайтового игрока обычно сильный","Фолд: не хочу играть флип","Колл"],"ans":2,"why":"Читай текущий диапазон, а не исторический: тильтующий игрок шовит гораздо шире, примерно 25% рук. Колл 27.5bb в итоговый банк 61bb требует около 45% эквити, а TT против такого диапазона имеет порядка 60%+. Даже против многих оверкарт это флип, а против пар ниже и слабых Ax ты фаворит.","tag":"против тильта"},{"id":"preflop-01","cat":"preflop","level":1,"pos":"SB vs BTN","hero":"7c 6d","board":"","pot":4,"stack":100,"q":"Кэш, 100bb. BTN открывается до 2.5bb. Ты в SB с 7♣6♦. Действие?","opts":["Колл","3-бет до ~11bb","Фолд"],"ans":2,"why":"Из SB ты будешь без позиции весь постфлоп, а BB может сквизить за тобой. Поэтому из SB против BTN стратегия близка к «3-бет или фолд»: колл-диапазон узкий. Разномастному 76o не хватает ни сырого эквити, ни играбельности, ни блокеров для 3-бет-блефа. Фолд.","tag":"игра из SB"},{"id":"preflop-02","cat":"preflop","level":2,"pos":"SB vs CO + BTN","hero":"Ad Qc","board":"","pot":6.5,"stack":100,"q":"100bb. CO открывается до 2.5bb, BTN коллирует. Ты в SB с A♦Q♣. Лучшее действие?","opts":["Сквиз до ~7.5bb","Колл","Фолд","Сквиз до ~12–13bb"],"ans":3,"why":"AQo из SB против открытия и колла — явный сквиз для вэлью: эта рука хорошо доминирует колл-диапазон BTN, а без позиции её неудобно играть в мультивее. Сайзинг сквиза должен быть больше обычного 3-бета: в банке больше мёртвых денег, а в маленький сквиз дешёво войдут оба оппонента. Ориентир для 3-бета из SB — около 4–5x открытия плюс ~1 открытие за каждого коллера.","tag":"сквиз"},{"id":"preflop-03","cat":"preflop","level":2,"pos":"CO vs BTN","hero":"Ac Kd","board":"","pot":12,"stack":100,"q":"100bb. Ты открылся с CO до 2.5bb, BTN 3-бетнул до 8bb, блайнды сфолдили. У тебя A♣K♦. Лучшее действие?","opts":["Фолд","4-бет олл-ин 100bb","Колл","4-бет до ~22bb"],"ans":3,"why":"Против широкого 3-бета BTN рука AKo — стандартный 4-бет для вэлью: она доминирует его AQ/AJ/KQ, блокирует AA/KK и играет хорошо при олл-ине. Сайзинг около 2.5–2.75x от 3-бета без позиции позволяет получать колл хуже и олл-ин от QQ/JJ/AQs. Олл-ин на 100bb слишком большой: он выбивает весь худший диапазон и оставляет только AA/KK.","tag":"4-бет"},{"id":"preflop-04","cat":"preflop","level":2,"pos":"CO vs BTN (3-бет пот)","hero":"","board":"","pot":16.5,"stack":92.5,"q":"100bb. Ты открылся с CO до 2.5bb, BTN 3-бетнул до 7.5bb, ты коллируешь. Блайнды сфолдили. Какой будет SPR на флопе?","opts":["~12","~5.6","~3","~8"],"ans":1,"why":"Банк: 7.5 + 7.5 + 0.5 + 1 = 16.5bb, за спиной у каждого 100 − 7.5 = 92.5bb. SPR = 92.5/16.5 ≈ 5.6. При таком SPR топ-пара с хорошим кикером часто готова к стеку, а сеты и стриты легко получают полный стек. Поэтому без позиции в 3-бет поте выгоднее держать руки, которые часто делают сильную топ-пару, а не мелкие пары с надеждой на сет.","tag":"SPR"},{"id":"preflop-05","cat":"preflop","level":2,"pos":"CO vs UTG","hero":"3s 3d","board":"","pot":4.5,"stack":40,"q":"Кэш, эффективный стек 40bb. UTG открывается до 3bb, ты на CO с 33. Действие?","opts":["Колл ради сета","3-бет","Фолд"],"ans":2,"why":"Сетмайнинг держится на имплайд-оддсах. Сет на флопе приходит примерно в 11.8% случаев (~7.5:1 против), а с учётом того, что сет не всегда оплачивается и иногда проигрывает, нужен стек примерно в 15–20 раз больше колла. 3 × 15 = 45bb, а у нас лишь 40bb, к тому же позади могут сквизить. 3-бет мелкой парой против сильного диапазона UTG бессмыслен — она не выдерживает 4-бета и плохо реализует эквити.","tag":"имплайд-оддсы"},{"id":"preflop-06","cat":"preflop","level":3,"pos":"Сателлит, CO vs UTG","hero":"As Ad","board":"","pot":null,"stack":40,"q":"Сателлит: 10 одинаковых билетов, осталось 11 игроков. У тебя 3-й стек (40bb). Самый короткий стек имеет 1bb и следующей раздачей попадает на большой блайнд. Чип-лидер (80bb) пушит с UTG, до тебя все фолдят. Ты на CO с AA. Действие?","opts":["Пуш поверх","Колл: AA выигрывает ~80%+","Колл, если у него широкий диапазон","Фолд"],"ans":3,"why":"В сателлите приз за 1-е и 10-е место одинаковый, поэтому важно только выжить. Если ты фолдишь, то почти наверняка получаешь билет: короткий стек вот-вот вылетит. Если коллируешь, в ~15–20% случаев теряешь всё, а победа почти ничего не добавляет. Это крайний пример ICM: ценность фишек нелинейна, и ставка выживания важнее чипового EV.","tag":"ICM"},{"id":"preflop-07","cat":"preflop","level":1,"pos":"BB vs BTN","hero":"Qd 7c","board":"","pot":3.5,"stack":100,"q":"100bb. BTN мин-рейзит до 2bb, SB фолдит. Ты на BB с Q♦7♣. Действие?","opts":["3-бет до 9bb","Фолд","Колл"],"ans":2,"why":"Цена отличная: ты доплачиваешь 1bb, чтобы разыграть банк 4.5bb, то есть нужно всего ~22% эквити. Против широкого диапазона BTN у Q7o его больше, а реализация достаточна, чтобы защищать. Против мин-рейза BB защищает очень широко — до 60–70% рук. Для 3-бета Q7o не подходит: слабые блокеры и много доминации.","tag":"защита BB"},{"id":"preflop-08","cat":"preflop","level":2,"pos":"BTN vs UTG + HJ","hero":"As Qd","board":"","pot":13,"stack":100,"q":"100bb, 6-max. UTG открывается до 2.5bb, HJ делает 3-бет до 9bb. Ты на BTN с A♠Q♦. Действие?","opts":["4-бет","Колл","Фолд"],"ans":2,"why":"Посмотри на силу диапазонов: 3-бет против открытия UTG очень сильный (QQ+, AK, AQs, немного блефов), и AQo против него часто доминирован. При колле ты можешь попасть в сквиз-сэндвич (UTG ещё может 4-бетнуть), а 4-бет-блефу эта рука подходит хуже, чем Ax-одномастные с лучшей играбельностью. Сильная на вид рука — это не то же самое, что сильная рука против конкретного диапазона.","tag":"колд-колл"},{"id":"preflop-09","cat":"preflop","level":2,"pos":"SB vs BTN","hero":"Ah Jh","board":"","pot":4,"stack":100,"q":"100bb. BTN открывается до 2.5bb, ты решил 3-бетить из SB с A♥J♥. Какой сайзинг 3-бета стандартный?","opts":["3-бет до ~11bb","3-бет до 6bb","3-бет до 20bb","Колл"],"ans":0,"why":"Без позиции 3-бет больше, чем в позиции: около 4–4.5x открытия, то есть 10–11bb против 2.5bb. Так ты хуже даёшь оддсы BTN для колла в позиции, и он реже реализует эквити. В позиции (например, BTN против CO) хватает ~3x. Маленький 3-бет без позиции даёт ему отличный колл, а 20bb уже перебор: рискуешь много против немногих фолдов.","tag":"размер 3-бета"},{"id":"preflop-10","cat":"preflop","level":2,"pos":"","hero":"","board":"","pot":null,"stack":null,"q":"Ты играешь на микролимитах с высоким рейком (около 5–6% с высоким капом). Как это должно влиять на префлоп-стратегию по сравнению с безрейковыми решениями солвера?","opts":["BB нужно защищать шире: в маленьких банках рейк дешевле","Рейк никак не влияет на префлоп","Открывать шире из ранних позиций, чтобы было больше банков","Меньше флетов (особенно мультивей и без позиции), больше стратегии «3-бет или фолд», BB защищать немного уже"],"ans":3,"why":"Рейк — налог на банки, которые доходят до флопа, а особенно на маленькие и мультивей-банки, где маргинальные руки выигрывают немного. Поэтому маргинальные коллы (колд-коллы, защита BB с худшими руками) теряют больше всего EV. Решения, которые выигрывают банк префлоп (3-беты, стилы), рейком не облагаются. В раковых играх стратегия становится тайтовее и агрессивнее.","tag":"рейк"},{"id":"mental-01","cat":"mental","level":1,"pos":"","hero":"","board":"","pot":null,"stack":null,"q":"Ты заколлировал ставку в банк на ривере блефкэтчером, оценив, что у оппонента около 40% блефов в этой линии. Он показал натсы. Как правильно оценить решение?","opts":["Нужно было рейзить","Оценивать против диапазона: если блефов в этой линии ≥33%, колл верный независимо от этой раздачи. Проверить, был ли верен сам ридинг диапазона","Колл был ошибкой: он показал натсы","Невозможно оценить, пока не видно ещё несколько его рук"],"ans":1,"why":"Одна раздача — это одна точка из распределения; против ставки в банк ты должен проигрывать до 67% коллов и всё равно быть в плюсе. Решение оценивается по входным данным: верно ли восстановлен диапазон, верна ли оценка доли блефов, правильно ли посчитаны оддсы. Если ридинг основан на данных, а не на надежде, — это хорошее решение с плохим результатом.","tag":"результатизм"},{"id":"mental-02","cat":"mental","level":2,"pos":"","hero":"","board":"","pot":null,"stack":null,"q":"После трёх бэдбитов подряд ты замечаешь, что коллируешь 3-беты руками, которые обычно фолдишь, и хочешь «отыграться». Лучшее действие?","opts":["Поднять лимит, чтобы быстрее отыграться","Продолжить, но играть агрессивнее, чтобы вернуть инициативу","Взять паузу или закончить сессию по заранее заданному поведенческому стоп-критерию","Открыть больше столов, чтобы отвлечься"],"ans":2,"why":"Ключевой сигнал — не проигрыш, а изменение поведения: ты отклоняешься от своих стандартных решений. Это объективный признак тильта, и дальнейшая игра почти наверняка будет хуже твоего A-game. Лучше заранее прописать триггеры (например, «два решения подряд вне стратегии — пауза 10 минут»), а не решать в моменте. «Отыграться» — эмоциональная цель, а цель сессии — качество решений.","tag":"тильт"},{"id":"mental-03","cat":"mental","level":1,"pos":"","hero":"","board":"","pot":null,"stack":null,"q":"Твой банкролл — $1500, и это профессиональные деньги (ты не можешь легко его пополнить). На каком лимите кэша разумно играть регулярно?","opts":["NL50 (30 бай-инов)","NL200 (7.5 бай-ина)","NL100 (15 бай-инов)","NL500 — шот одним бай-ином"],"ans":0,"why":"Для кэша общепринятый ориентир — 30–50+ бай-инов на свой лимит, а для профи, которые живут с игры, — ближе к верхней границе. Даунсвинги в 10–20 бай-инов случаются даже у выигрывающих игроков, и банкролл в 15 бай-инов их не выдержит. NL50 при 30 бай-инах — нижняя граница разумного; падение банкролла — повод опуститься на лимит ниже без эго.","tag":"банкролл-менеджмент"},{"id":"mental-04","cat":"mental","level":2,"pos":"","hero":"","board":"","pot":null,"stack":null,"q":"Ты разбираешь сложную раздачу после сессии. Какой подход самый полезный?","opts":["Спросить мнение в чате и выбрать самое популярное","Сразу загрузить в солвер и запомнить частоты","Пройти улицы по порядку: восстановить диапазоны обоих игроков и свой план на каждой улице, не глядя на результат; сформулировать конкретный вопрос и проверить его солвером или расчётом","Посмотреть, что показал оппонент, и понять, где ошибся"],"ans":2,"why":"Разбор начинается с процесса, а не с результата: если сразу смотреть карты оппонента, анализ подстраивается под исход (hindsight bias). Восстановление диапазонов по улицам тренирует навык, который нужен за столом. Конкретный вопрос («колл или фолд против этого диапазона?») превращает солвер в инструмент проверки гипотезы, а не в источник частот для зубрёжки.","tag":"разбор раздач"},{"id":"mental-05","cat":"mental","level":2,"pos":"","hero":"","board":"","pot":null,"stack":null,"q":"За 10 000 рук в 6-max у тебя −3bb/100. Стандартное отклонение — около 100bb/100. Что можно сказать о твоём реальном винрейте?","opts":["Твой реальный винрейт ровно −3bb/100","Почти ничего: стандартная ошибка около ±10bb/100, а 95%-интервал — примерно от −23 до +17bb/100","Ты точно выигрывающий, просто не везёт","Ты проигрывающий игрок, надо опускаться"],"ans":1,"why":"Стандартная ошибка винрейта = σ/√(число сотен рук) = 100/√100 = 10bb/100, и 95%-интервал — это ±2 SE, то есть около ±20bb/100. В такой интервал помещаются и сильный минус, и сильный плюс. Оценивай игру по качеству решений и разборам (а также по EV-графикам), а не по результату на коротких выборках.","tag":"дисперсия"},{"id":"mental-06","cat":"mental","level":2,"pos":"","hero":"","board":"","pot":null,"stack":null,"q":"Какой критерий завершения сессии самый правильный?","opts":["Когда в минусе на 2 бай-ина: стоп-лосс","Когда в плюсе на 3 бай-ина: зафиксировать прибыль","Когда падает качество решений (усталость, тильт, автопилот) или пропадает выгодный состав за столами","Ровно через 4 часа, что бы ни было"],"ans":2,"why":"Покер — одна бесконечная сессия: выигрыш или проигрыш в течение дня не меняют EV следующей раздачи. Значение имеют только два фактора: насколько хорошо ты сейчас играешь и насколько выгодны оппоненты. Денежный стоп-лосс полезен как предохранитель от тильта, но это заменитель самооценки качества игры, а не главный критерий.","tag":"дисциплина"},{"id":"mental-07","cat":"mental","level":3,"pos":"","hero":"","board":"","pot":null,"stack":null,"q":"Тебе предстоит сложное решение на ривере против рега. Какой порядок мышления самый правильный?","opts":["Посчитать пот-оддсы и коллировать, если рука «достаточно хорошая»","Вспомнить, блефовал ли он в прошлый раз","Довериться чутью насчёт этого игрока","Восстановить его диапазон по улицам → оценить соотношение вэлью и блефов для этой линии и сайзинга → сравнить с требуемым эквити → учесть блокеры своей руки"],"ans":3,"why":"Сильное решение строится от диапазона к руке: сначала что у него может быть, затем какая доля из этого блефы, затем сколько эквити тебе нужно, и в конце как твои карты меняют эту картину. Чутьё и одна прошлая раздача — шум, а «достаточно хорошая рука» без контекста диапазона ничего не значит. Если тренировать эту последовательность на разборах, за столом она станет быстрой.","tag":"процесс принятия решений"},{"id":"mental-08","cat":"mental","level":2,"pos":"","hero":"","board":"","pot":null,"stack":null,"q":"Ты уже вложил в банк 40bb, а на ривере оппонент делает большую ставку. Ловишь себя на мысли: «Я слишком много вложил, чтобы теперь фолдить». Как к этому относиться?","opts":["Правильно всегда фолдить на большие ставки на ривере","Это ошибка невозвратных затрат: вложенные фишки уже не твои. Большой банк учитывается только через пот-оддсы, а решение принимается по текущим оддсам и диапазону оппонента","Лучше рейзить, раз уж столько вложено","Это верно: вложенные фишки обязывают коллировать"],"ans":1,"why":"Фишки в банке — не «твои вложения», а общий банк. Их размер влияет только на оддсы, которые тебе предлагают, и это уже учтено в расчёте требуемого эквити. Если против его диапазона у тебя меньше нужного эквити, колл теряет деньги независимо от того, сколько ты положил раньше. Мысль «я слишком вложился» — сигнал остановиться и пересчитать, а не причина коллировать.","tag":"невозвратные затраты"},{"id":"mental-09","cat":"mental","level":2,"pos":"","hero":"","board":"","pot":null,"stack":null,"q":"После хорошего апсвинга ты хочешь попробовать лимит выше. Самый разумный подход?","opts":["Играть оба лимита по настроению","Никогда не подниматься, пока нет 100 бай-инов","Заранее выделить фиксированную сумму на шот (например, 3–5 бай-инов выше) и вернуться, если она проиграна, — без эмоций","Перейти на лимит выше со всем банкроллом"],"ans":2,"why":"Шот-тейкинг — нормальная часть роста, но правила задаются до шота, а не после первого проигрыша. Фиксированный бюджет ограничивает риск и убирает эмоциональное решение «ещё один бай-ин и отыграюсь». Возврат на свой лимит — запланированная часть процесса, а не поражение. Апсвинг тоже влияет на оценку своей силы, поэтому сверяйся со своими объективными критериями.","tag":"шот-тейкинг"},{"id":"mental-10","cat":"mental","level":2,"pos":"","hero":"","board":"","pot":null,"stack":null,"q":"Рег 3-бетит тебя чуть ли не каждую вторую раздачу. Ты злишься и хочешь «наказать» его 4-бет-блефом любыми двумя. Лучший подход?","opts":["Проверить статистику (его 3-бет % против твоей позиции, выборка) и хладнокровно скорректироваться: расширить 4-беты (вэлью + блефы с блокерами вроде A5s), чуть сузить открытия под ним","Игнорировать и продолжать играть как обычно","Перестать открываться вообще","4-бетить блефом каждый раз, чтобы он понял"],"ans":0,"why":"Эмоция «он меня таргетит» — сигнал перейти к данным: насколько велик его 3-бет на реальной выборке и с каких позиций. Правильная корректировка пропорциональна: больше 4-бетов, включая блефы с блокерами, и, возможно, немного уже открытия там, где он сидит в позиции. Месть «любыми двумя» — переэксплойт, который опытный рег легко накажет 5-бет-коллами.","tag":"эмоции и эксплойт"},{"id":"rd-01","cat":"exploit","level":1,"pos":"BTN vs BB","hero":"Ah Jc","board":"Jd 8s 4d","pot":5.5,"stack":97.5,"q":"Фиш 52/6, WTSD 41%, Fold to c-bet 28%. Ты открылся с BTN, он заколлировал с BB. Флоп, он чекает. Какой план лучше?","opts":["c-bet 33% всем диапазоном, как против рега","c-bet 33%, на тёрне чек для контроля банка","чек-бэк, чтобы он начал блефовать","c-bet 75% и план на три улицы вэлью на большинстве ранаутов"],"ans":3,"why":"Против станции деньги зарабатываются размером вэлью-ставок, а не частотой блефов. Он коллирует любой парой и любым дро, поэтому маленький сайзинг недобирает. Мокрая доска плюс станция — это крупный сайзинг и три улицы вэлью с топ-парой. Чек-бэк в расчёте на блеф пассивного фиша — потерянная улица.","tag":"вэлью против станции"},{"id":"rd-02","cat":"exploit","level":2,"pos":"BTN vs BB","hero":"Kd Qd","board":"Kc 9h 5s 7d","pot":22,"stack":80,"q":"Пассивный фиш 45/8, AF 0.9. Ты поставил флоп и тёрн. На тёрне он делает чек-рейз втрое. Что делаешь?","opts":["Колл: у фиша много дро","Ре-рейз олл-ин: топ-пара с хорошим кикером","Колл и чек-фолд на ривере, если придёт карта дро","Фолд"],"ans":3,"why":"У пассивного игрока агрессия почти всегда означает силу. С дро он чек-коллирует, а рейзит тёрн с двумя парами, сетами и стритами (86). Топ-пару со вторым кикером он не рейзит. Значит, против его диапазона рейза KQ почти всегда позади. Фолд — главный эксплойт против пассивных игроков: их рейз на поздних улицах = вэлью.","tag":"рейз пассивного игрока"},{"id":"rd-03","cat":"exploit","level":1,"pos":"BTN vs BB","hero":"Ah 5h","board":"Kh 8h 3c 2s Td","pot":30,"stack":70,"q":"Станция 48/10, WTSD 44%. Ты ставил флоп и тёрн с натс-флеш-дро и не собрал. Ривер, он чекает. Как действуешь?","opts":["Ставка 75% банка","Ставка 33% банка","Олл-ин: только так он сфолдит пару","Чек: сдаться"],"ans":3,"why":"Станция дошла до ривера через две ставки: у неё любая пара, а с WTSD 44% она не фолдит её на ривере. Фолд-эквити почти ноль при любом сайзинге. У A-high может быть немного шоудаун-вэлью против пропущенных дро. Блеф против станции — самый дорогой лик в игре против рекреационалов.","tag":"не блефуй станцию"},{"id":"rd-04","cat":"exploit","level":2,"pos":"BTN vs BB","hero":"As Ac","board":"Th 9h 3c","pot":5.5,"stack":97.5,"q":"Фиш 40/10 донкает 1/4 банка в тебя после твоего опена с BTN. Что лучше?","opts":["Колл: пусть продолжает ставить","Олл-ин","Рейз примерно в 3.5 раза","Колл, на тёрне рейз"],"ans":2,"why":"Маленький донк рекреационала — это «где я?»: слабая Tx, 9x, средняя пара или дро. На связанной двухмастной доске эти руки охотно платят рейз, а давать дешёвую карту дро плохо. Рейз берёт вэлью сейчас и строит банк под ставки на тёрне и ривере.","tag":"сайзинг-телл: мини-донк"},{"id":"rd-05","cat":"exploit","level":2,"pos":"BB vs BTN","hero":"Jh Js","board":"Qs 7c 4d 2h","pot":28,"stack":70,"q":"Маньяк 60/42, AF 6, c-bet 90%. Ты на BB, флоп чек-колл, тёрн он снова ставит 2/3. Лучший план?","opts":["Чек-колл и чек-колл ривера, включая крупную ставку","Чек-рейз: защитить руку от оверкарт","Фолд: дама на флопе","Донк на ривере, чтобы не дать ему блефовать"],"ans":0,"why":"У маньяка огромная доля воздуха во всех ставках. Если ты рейзишь или ставишь сам, его блефы фолдят и в игре остаются только руки сильнее твоей. Если чек-коллишь, он сам дожигает свои блефы. JJ здесь хороший блефкэтчер. Против гиперагрессии отдавай ему инициативу.","tag":"блефкэтч против маньяка"},{"id":"rd-06","cat":"exploit","level":2,"pos":"CO vs BB","hero":"Ad Qc","board":"","pot":13.5,"stack":100,"q":"Маньяк на BB 3-бетит 22% рук. Ты открылся с CO с AQo 2.5bb, он делает 3-бет до 11bb. Что делаешь?","opts":["4-бет примерно до 24bb и колл пуша","4-бет и фолд на пуш","Фолд: AQo плохо играет без инициативы","Колл в позиции"],"ans":0,"why":"Против 3-бета 22% диапазон оппонента состоит в основном из рук хуже AQo: Ax, Kx, одномастные коннекторы. AQo там сильно впереди, поэтому 4-бет делается на вэлью, и пуш надо коллировать. 4-бет с фолдом на пуш превращает вэлью-руку в блеф.","tag":"вэлью-4бет против маньяка"},{"id":"rd-07","cat":"exploit","level":1,"pos":"BTN","hero":"Kc 4d","board":"","pot":1.5,"stack":100,"q":"На SB и BB два нита: Fold to Steal 87%, 3-бет 3%. Все сфолдили до тебя на BTN. Твои действия с K4o?","opts":["Опен 2bb, на 3-бет колл","Фолд: рука вне чарта","Опен 2bb, на 3-бет фолд","Лимп"],"ans":2,"why":"Если блайнды фолдят 87%, стил приносит немедленную прибыль почти с любыми двумя картами: рискуешь 2bb, чтобы выиграть 1.5bb, а безубыток наступает при фолдах примерно в 57% случаев. 3-бет нита — это QQ+ и AK, против него K4o — чистый фолд. Чарты пишутся против средних оппонентов. Против нитов они расширяются.","tag":"стил против нитов"},{"id":"rd-08","cat":"exploit","level":2,"pos":"CO vs BB","hero":"Ac Qh","board":"","pot":13.5,"stack":100,"q":"Нит 12/10, 3-бет 2.5% за 2000 рук. Ты открылся с CO с AQo, он делает 3-бет с BB до 11bb. Твоё действие?","opts":["Фолд","Колл в позиции","Олл-ин","4-бет: AQo в топе диапазона"],"ans":0,"why":"3-бет 2.5% — это примерно QQ+ и AK. Против такого диапазона у AQo около 30% эквити, рука доминирована. Без позиции против агрессора колл доиграть сложно, а флоп с дамой или тузом часто приведёт к проигрышу крупного банка. Уважай частоты: 3-бет нита не баланс, а констатация силы.","tag":"уважать 3-бет нита"},{"id":"rd-09","cat":"exploit","level":2,"pos":"BTN vs CO","hero":"6h 5h","board":"Kd 7c 2s 3c","pot":10.5,"stack":93,"q":"Нит открылся с CO, ты заколлировал на BTN. Флоп: он c-бетит 1/3, ты коллируешь. Тёрн 3c, нит чекает. Его статы: c-bet флопа 70%, c-bet тёрна 25%. Что делаешь?","opts":["Ставка 20%","Чек-бэк: у тебя гатшот, бери бесплатную карту","Овербет 150%","Ставка 60–66% банка"],"ans":3,"why":"Если нит ставит c-bet на тёрне только в 25% случаев, его чек — это отказ от банка. Сюда попадают воздух, слабые Kx и средние пары, которым неуютно. Ставка 60–66% выбивает большую часть его диапазона. Гатшот на 4 даёт запасное эквити, если он заколлирует. Эксплойт строится на разрыве между флоп- и тёрн-c-bet.","tag":"флоат против нита"},{"id":"rd-10","cat":"exploit","level":1,"pos":"BTN vs CO","hero":"Ks 9s","board":"","pot":4,"stack":100,"q":"Слабо-тайтовый рег 18/15, Fold to 3-bet 72%. Он открылся с CO, ты на BTN с K9s. Лучшее действие?","opts":["Колл","Фолд","3-бет и колл 4-бета","3-бет до 8–8.5bb, на 4-бет фолд"],"ans":3,"why":"Если он фолдит на 3-бет 72% рук, блеф-3-бет приносит прибыль сразу. Когда он коллирует, ты играешь в позиции с одномастной рукой, у которой хорошая играбельность. Его 4-бет при таком профиле — только сильные руки, поэтому на него фолд. Колл упускает фолд-эквити, которую он тебе дарит.","tag":"3-бет против оверфолда"},{"id":"rd-11","cat":"exploit","level":2,"pos":"BB vs BTN","hero":"6h 5h","board":"Kc 8d 3s","pot":5.5,"stack":97.5,"q":"Слабо-тайтовый рег: c-bet 80% маленьким сайзингом, Fold to flop raise 65%. Он ставит 1/3 банка. У тебя 6h5h с бэкдорами. Что делаешь?","opts":["Фолд: нет пары и нет дро","Колл, чтобы посмотреть тёрн","Колл, на тёрне донк","Чек-рейз примерно в 3.5 раза"],"ans":3,"why":"Маленький c-bet с частотой 80% означает, что в его ставке очень много воздуха. Чек-рейз примерно до 6.4bb в банк 7.3bb окупается, если он фолдит хотя бы в ~47% случаев, а он фолдит 65%. Если он заколлирует, бэкдоры к стриту и флешу дают эквити. Лучшие кандидаты для блефового чек-рейза — руки без шоудаун-вэлью, но с потенциалом.","tag":"чек-рейз против авто-c-bet"},{"id":"rd-12","cat":"exploit","level":2,"pos":"BTN vs CO, 3-бет пот","hero":"Ah Kc","board":"Kd 8c 5h 2s Js","pot":95,"stack":null,"q":"TAG-рег NL50 23/19. Ты сделал 3-бет на BTN, он заколлировал. Ты поставил три улицы, на ривере он рейзит олл-ин. Что делаешь?","opts":["Колл: топ-пара топ-кикер","Фолд","Колл: он не может всегда иметь сет","Зависит только от шансов банка"],"ans":1,"why":"Рейзы ривера на низких лимитах почти не содержат блефов, особенно в 3-бет потах. AK обыгрывает только блефы, а вэлью-диапазон здесь — KJs, JJ, 88, 55, иногда 85s. Шансы банка требуют около 25–30% блефов, а у популяции их почти нет. Фолд топ-пары на рейз ривера — не трусость, а эксплойт популяционного андерблефа.","tag":"популяция: рейз ривера"},{"id":"rd-13","cat":"exploit","level":3,"pos":"BTN vs SB","hero":"As 5s","board":"","pot":13.5,"stack":100,"q":"LAG-рег на SB: 3-бет 13%, Fold to 4-bet 62%. Ты открылся с BTN, он сделал 3-бет до 10bb. Твой ход с A5s?","opts":["4-бет примерно до 22bb, на 5-бет фолд","Фолд","4-бет и колл пуша","Колл в позиции"],"ans":0,"why":"4-бет до 22bb стоит тебе ещё 19.5bb, а в банке 13.5bb. Безубыток наступает, если он фолдит в 19.5/33 ≈ 59% случаев. Он фолдит 62%, так что 4-бет приносит прибыль уже на фолдах. У A5s есть и другие плюсы: туз блокирует AA и AK, а если он заколлирует, у руки остаётся эквити. Колл тоже допустим, но 4-бет лучше использует его лик. На 5-бет фолд: в этом случае его диапазон — AA, KK, AK.","tag":"4-бет блеф с блокером"},{"id":"rd-14","cat":"exploit","level":1,"pos":"UTG vs BB","hero":"Qs Jd","board":"As 8d 4c","pot":5.5,"stack":97.5,"q":"Фит-о-фолд: Fold to c-bet 76%, WTSD 19%. Ты открылся с UTG, он защитил BB. Флоп, он чекает. Как ставить?","opts":["c-bet 25–33% банка","Чек-бэк: у тебя ничего нет","Овербет","c-bet 75% банка"],"ans":0,"why":"Против игрока, который без пары фолдит 76%, нужна дешёвая ставка, которая не обходится дорого, когда он попал. Маленький c-bet окупается при фолдах в 20–25% случаев, а он фолдит втрое чаще. Крупный сайзинг лишний: фолды ты получишь и так, а потеряешь больше, когда он заколлирует с тузом.","tag":"c-bet против фит-о-фолд"},{"id":"rd-15","cat":"exploit","level":2,"pos":"CO vs BB","hero":"Ad Kc","board":"9h 7c 3s 2d","pot":12,"stack":91,"q":"Тот же фит-о-фолд (Fold to c-bet 76%, WTSD 19%). Он заколлировал твой c-bet на флопе 9-7-3. Тёрн — 2d, он чекает. Что делаешь?","opts":["Овербет: он слабый игрок","Ставка 25%","Ставка 66%: продолжаем давить","Чек-бэк: бесплатная карта и шоудаун"],"ans":3,"why":"Если фит-о-фолд коллирует флоп, у него почти всегда пара. Бланк на тёрне ничего не меняет, и пару он не сфолдит, поэтому фолд-эквити почти нулевая. Чек-бэк даёт 6 аутов на оверкарты бесплатно. Стрелять имеет смысл только на картах, которые пугают его диапазон, например на тузе или короле для средних пар.","tag":"когда не баррелить"},{"id":"rd-16","cat":"exploit","level":3,"pos":"Лайв 2/5, BTN vs BB","hero":"As Kc","board":"7s 6s 2h Jc 4s","pot":120,"stack":110,"q":"Лайв. Оппонент сел на минимальный бай-ин, вздыхает, пересчитывает фишки. Он чек-коллировал флоп и тёрн. На ривере пришла третья пика, он чекает. У тебя AsKc без пары. Что делаешь?","opts":["Олл-ин примерно на размер банка","Ставка 1/2 банка","Чек-бэк: AK-high может выиграть","Ставка 1/4 банка"],"ans":0,"why":"Это профиль «испуганных денег». Флеш доехал, а As блокирует натс-флеш, поэтому твой блеф выглядит правдоподобно. Под угрозой весь его стек, и с одной или двумя парами он скорее сдастся, чем вылетит. С флешем он, скорее всего, поставил бы сам или ответил бы быстро. Против scared money размер ставки — главный рычаг.","tag":"давление на scared money"},{"id":"rd-17","cat":"exploit","level":2,"pos":"BTN vs BB","hero":"Kd Jh","board":"Kh 8c 4d 6s 2c","pot":12,"stack":88,"q":"Левелер: показывает блефы, хиро-коллирует, любит рассуждать «я знал, что ты слабый». Ты поставил c-bet на флопе и чекнул тёрн. На ривере он чекает. Что делаешь?","opts":["Ставка 60–70% на вэлью","Чек: топ-пара слабый кикер, хватит","Олл-ин","Ставка 25%, чтобы получить колл от A-high"],"ans":0,"why":"Левелер интерпретирует чек на тёрне как слабость и будет коллировать с 8x, 4x и даже с A-high, «потому что ты сдался». Тонкий вэлью против него — основной источник прибыли. Средне-крупный сайзинг выглядит как блеф и оплачивается. Не пытайся играть против него на более высоком уровне: выигрывай на уровень ниже.","tag":"тонкий вэлью против левелера"},{"id":"rd-18","cat":"exploit","level":2,"pos":"Лайв 1/3","hero":"Kh Ts","board":"Qc Td 5h 3s 8c","pot":80,"stack":150,"q":"Лайв. Рекреационал ставит банк на ривере, после ставки расслабленно болтает с соседом, пьёт, откидывается на стуле. У тебя вторая пара. Что делаешь?","opts":["Колл только по шансам банка","Рейз блефом","Фолд","Колл: он ведёт себя слишком спокойно, это актёрство"],"ans":2,"why":"Из эмпирических лайв-теллов (Зак Элвуд) один из самых надёжных — расслабленность и разговорчивость после ставки, и он чаще означает силу. Блефующий обычно замирает. К этому добавляется популяционный андерблеф на ривере в живой игре. Классическое правило «сильный значит слабый» — частный случай, а не закон.","tag":"лайв-телл: после ставки"},{"id":"rd-19","cat":"exploit","level":3,"pos":"Лайв 1/3","hero":"Kh Ts","board":"Qc Td 5h 3s 8c","pot":80,"stack":150,"q":"Та же раздача, но оппонент весь вечер был болтлив, а после ставки банк на ривере полностью замер: не двигается, смотрит в одну точку, дыхание поверхностное. У тебя вторая пара. Что делаешь?","opts":["Фолд: рекреационалы не блефуют","Колл как блефкэтчер","Фолд: ставка банк — это сила","Рейз олл-ин"],"ans":1,"why":"Резкое отклонение от базового поведения в поляризованной ситуации — ключевой сигнал. Замирание после крупной ставки часто означает блеф: человек «прячется», чтобы не выдать себя. Вторая пара обыгрывает все его блефы. Рейз не нужен: худшие руки не заколлируют, а блефы уже вложились.","tag":"лайв-телл: замирание"},{"id":"rd-20","cat":"exploit","level":2,"pos":"Лайв 2/5, BTN vs UTG","hero":"6d 6c","board":"","pot":42,"stack":200,"q":"Лайв, эффективные стеки 200bb. На шоудаунах ты видел: с коннекторами этот рекреационал открывает $10, с QQ+ — $25. Сейчас он открывает $25 с UTG. У тебя 66 на BTN. Твоё действие?","opts":["3-бет: изолировать рекреационала","Колл ради сета","Фолд: он показал силу","Олл-ин"],"ans":1,"why":"Сайзинг-телл сузил его диапазон до больших пар, которые не умеют фолдить оверпару. На глубине 200bb имплайд-оддсы для сета огромные: ты заплатишь $25, а выиграть можешь весь стек. При этом AQo или AJs здесь — чистый фолд: они доминированы и не выигрывают крупных банков.","tag":"лайв-сайзинг префлоп"},{"id":"rd-21","cat":"exploit","level":2,"pos":"BTN vs CO","hero":"Ah 9h","board":"Qd 8c 4s 7h","pot":11,"stack":94,"q":"Популяция NL25–50. Префлоп-агрессор на CO чекнул флоп, ты чекнул в позиции. Тёрн, он снова чекает. Как часто стоит ставить с воздухом и средними руками?","opts":["Широко, ставкой около 60%: после пропущенного c-bet пул фолдит около 60%","Только овербетом","Почти никогда: он может чекать сильные руки","Только с натсами"],"ans":0,"why":"Если префлоп-агрессор пропустил c-bet, а потом чекнул и тёрн, его диапазон сильно ограничен. По популяционной статистике на ставку в такой линии фолдят около 60% рук. Ставка 60% окупается при фолдах в ~38% случаев. A9 к тому же добавляет оверкарту и гатшот. Пул низких лимитов редко чекает сильные руки дважды.","tag":"популяция: проба тёрна"},{"id":"rd-22","cat":"exploit","level":3,"pos":"BB vs BTN","hero":"Ac 3d","board":"Kh 9c 4s 6d","pot":10,"stack":90,"q":"Популяция NL25. Флоп ты чекнул, BTN чекнул в ответ. На тёрне ты снова чекаешь, BTN ставит 75% банка. У тебя A-high. Что делаешь?","opts":["Чек-рейз олл-ин","Колл: эта линия у пула перенасыщена блефами","Фолд: ставка большая","Фолд: нет пары"],"ans":1,"why":"Отложенный c-bet после чек-бэка флопа у пула низких лимитов перенасыщен блефами: в позиции они чекали воздух и теперь «забирают» банк. Против таких линий нужно защищаться легче, чем в стандартных спотах, даже A-high и слабыми парами. Обрати внимание на асимметрию: ставки ривера пул недоблефовывает, а пробы и отложенные ставки, наоборот, переблефовывает.","tag":"популяция: перенасыщенные линии"},{"id":"rd-23","cat":"exploit","level":2,"pos":"BTN vs BB","hero":"Ks Qs","board":"Jc 7d 3h 5s 2c","pot":38,"stack":75,"q":"Рег NL50, против колл-колл-колл фолдит на третий барель около 56%. Ты ставил флоп и тёрн с оверкартами, ривер бланк. Его профиль — стандартный TAG, WTSD 25%. Что делаешь?","opts":["Чек: K-high может выиграть","Ставка 75% банка блефом","Ставка 25% банка","Зависит от его тайминга, но по умолчанию чек"],"ans":1,"why":"Ставка 75% банка окупается при фолдах в ~43% случаев, а пул фолдит около 56%. Это прибыльный блеф. KQ без шоудаун-вэлью — хороший кандидат: не блокирует его фолды (средние пары, A-high) и пропущенные дро. Против станции с WTSD 40%+ этот блеф стал бы ошибкой, поэтому профиль решает.","tag":"третий барель"},{"id":"rd-24","cat":"exploit","level":1,"pos":"","hero":"","board":"","pot":null,"stack":null,"q":"Сколько рук нужно, чтобы с разумной уверенностью доверять VPIP/PFR оппонента, и сколько — чтобы доверять его Fold to 3-bet?","opts":["VPIP/PFR — 1000 рук, Fold to 3-bet — 100 рук","VPIP/PFR — ~100+ рук; Fold to 3-bet — сотни ситуаций с 3-бетом, это тысячи рук","Статы надёжны с первых 20 рук","Обоим статам хватит 50 рук"],"ans":1,"why":"VPIP и PFR набирают выборку с каждой раздачи, поэтому грубая картина видна через 15–20 рук, а через 100–500 ей уже можно доверять. Ситуационные статы (Fold to 3-bet, Fold to c-bet, чек-рейз) копятся только из конкретных ситуаций, и надо смотреть на число возможностей, а не на число рук. «Fold to 3-bet 80%» на 5 возможностях — шум.","tag":"выборка статов"},{"id":"rd-25","cat":"exploit","level":2,"pos":"BB vs BTN","hero":"Td 9d","board":"Qh 6d 3h","pot":5.5,"stack":97.5,"q":"LAG-рег ставит c-bet 85% маленьким сайзингом. Он ставит 1/3 банка. У тебя T9 с бэкдор-флешем и бэкдор-стритом. Что лучше всего эксплуатирует его стратегию?","opts":["Колл","Фолд","Чек-рейз в 3–3.5 раза","Колл и донк на тёрне"],"ans":2,"why":"При c-bet 85% в ставке много рук без пары и без дро, которые фолдят на рейз. T9 не имеет шоудаун-вэлью, но получает много хороших карт на тёрне: бубны, J, 8, 7. Такие руки и становятся блеф-чек-рейзами. Сильные руки и комбо-дро тоже чек-рейзят, так что диапазон остаётся сбалансированным. Против авто-c-bet увеличивай частоту чек-рейза.","tag":"чек-рейз против LAG"}];
+</script>
+<script>
+"use strict";
+/* ============================== constants ============================== */
+const AXES=[
+  {id:'math',short:'Математика',name:'Математика',desc:'шансы банка, MDF, ауты, комбинаторика'},
+  {id:'ranges',short:'Диапазоны',name:'Чтение диапазонов',desc:'сужение диапазона по линии, комбо, блокеры'},
+  {id:'postflop',short:'Постфлоп',name:'Постфлоп-стратегия',desc:'c-bet, сайзинги, баррели, value/блеф на ривере'},
+  {id:'exploit',short:'Игроки',name:'Чтение игроков',desc:'профили, статы, тайминги, эксплойты'},
+  {id:'preflop',short:'Префлоп',name:'Префлоп',desc:'3-бет/4-бет, сквиз, защита, SPR'},
+  {id:'mental',short:'Ментал',name:'Ментальная игра',desc:'тилт, процесс решений, дисциплина'},
+];
+const AXIS=Object.fromEntries(AXES.map(a=>[a.id,a]));
+const RANKS='AKQJT98765432';
+const SUITS={s:'♠',h:'♥',d:'♦',c:'♣'};
+const SRS_DAYS=[0,1,3,7,16,35];
+const DAY=86400000;
+const LS_KEY='pokerstab.v1';
+
+/* ============================== utils ============================== */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pct=x=>Math.round(x*100);
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const fmtDate=s=>{try{const [y,m,d]=s.split('-');return d+'.'+m}catch(e){return s}};
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>t.hidden=true,2200)}
+function card(c,sm){
+  if(!c||c.length<2)return '';
+  const r=c[0].toUpperCase().replace('1','T'),s=c[1].toLowerCase();
+  if(!SUITS[s])return '';
+  const cls=s==='s'?'s_':s;
+  return `<span class="pc ${cls}${sm?' sm':''}" aria-label="${esc(r+s)}">${r==='T'?'10':esc(r)}<span class="s">${SUITS[s]}</span></span>`;
+}
+const tx=s=>esc(s).replace(/[♠♥♦♣]/g,m=>`<span class="st ${{'♠':'s','♥':'h','♦':'d','♣':'c'}[m]}">${m}&#xFE0E;</span>`);
+const cardsOf=(str,sm)=>String(str||'').trim().split(/\s+/).filter(x=>/^[2-9TJQKA1][shdc]$/i.test(x)).map(c=>card(c,sm)).join('');
+
+/* ============================== state ============================== */
+function defaultState(){return{v:1,updatedAt:0,profile:null,diag:null,diagHistory:[],stats:{},srs:{},log:[],journal:[],tilt:null,plan:{done:{},start:null},aiQs:[],mathBest:null,rangeBest:{},routine:{}}}
+let S=defaultState();
+function normalize(o){const d=defaultState();if(!o||typeof o!=='object')return d;for(const k in d){if(o[k]!==undefined)d[k]=o[k]}return d}
+try{const raw=localStorage.getItem(LS_KEY);if(raw)S=normalize(JSON.parse(raw))}catch(e){}
+let dbRef=null,saveTimer=null,saving=false,dirty=false,sampleFn=null;
+function trimState(){
+  if(S.log.length>400)S.log=S.log.slice(-400);
+  if(S.journal.length>120)S.journal=S.journal.slice(-120);
+  if(S.aiQs.length>60)S.aiQs=S.aiQs.slice(-60);
+  if(S.diagHistory.length>8)S.diagHistory=S.diagHistory.slice(-8);
+}
+function save(){
+  S.updatedAt=Date.now();trimState();
+  try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch(e){}
+  if(dbRef){dirty=true;clearTimeout(saveTimer);saveTimer=setTimeout(flush,1200)}
+}
+async function flush(){
+  if(saving||!dirty||!dbRef)return;
+  saving=true;dirty=false;
+  try{await dbRef.set(JSON.parse(JSON.stringify(S)))}
+  catch(e){if(e&&(e.code==='invalid_argument'||e.code==='revoked'||e.code==='not_granted')){dbRef=null;setSync(false)}else dirty=true}
+  saving=false;
+  if(dirty&&dbRef)saveTimer=setTimeout(flush,4000);
+}
+function setSync(on){const el=$('#sync');el.classList.toggle('on',!!on);el.querySelector('span').textContent=on?'Прогресс синхронизирован с тренером':'Прогресс хранится в этом браузере'}
+
+async function initCaps(){
+  if(!window.claude||typeof window.claude.use!=='function')return;
+  const [db,user,sample]=await Promise.all([
+    claude.use('db').catch(()=>null),claude.use('user').catch(()=>null),claude.use('sample').catch(()=>null)]);
+  if(sample){sampleFn=sample;rerender()}
+  if(!db||!user)return;
+  let owner=false;try{owner=await user.isOwner()}catch(e){}
+  if(!owner)return;
+  try{
+    const ref=db.doc('coach/state');
+    const snap=await ref.get();
+    dbRef=ref;setSync(true);
+    if(snap.exists){
+      const remote=normalize(snap.data());
+      if((remote.updatedAt||0)>(S.updatedAt||0)){S=JSON.parse(JSON.stringify(remote));try{localStorage.setItem(LS_KEY,JSON.stringify(S))}catch(e){}rerender()}
+      else if((S.updatedAt||0)>(remote.updatedAt||0)){dirty=true;flush()}
+    }else if(S.updatedAt){dirty=true;flush()}
+  }catch(e){dbRef=null;setSync(false)}
+}
+
+/* ============================== stats / srs ============================== */
+function logEvent(kind,cat,c,t,extra){S.log.push(Object.assign({d:today(),ts:Date.now(),kind,cat,c,t},extra||{}))}
+function recordAnswer(q,ok){
+  const st=S.stats[q.cat]||(S.stats[q.cat]={c:0,t:0});st.t++;if(ok)st.c++;
+  const r=S.srs[q.id]||{box:0,due:0,seen:0,wrong:0};
+  r.seen++;
+  if(ok){r.box=Math.min(5,r.box+1);r.due=Date.now()+SRS_DAYS[r.box]*DAY}
+  else{r.wrong++;r.box=0;r.due=Date.now()+8*60000}
+  S.srs[q.id]=r;
+}
+function allQs(){return BANK.concat(S.aiQs||[])}
+function qById(id){return allQs().find(q=>q.id===id)}
+function dueQs(){const n=Date.now();return allQs().filter(q=>{const r=S.srs[q.id];return r&&r.due<=n})}
+function axisScore(id){
+  // blend: latest diagnostic and drill accuracy (drills weigh more as volume grows)
+  const d=S.diag&&S.diag.axes[id];const st=S.stats[id];
+  const dv=d?d.score:null;const tv=st&&st.t?st.c/st.t:null;
+  if(dv==null&&tv==null)return null;
+  if(dv==null)return tv;if(tv==null)return dv;
+  const w=Math.min(.7,st.t/40);
+  return dv*(1-w)+tv*w;
+}
+function weakestAxes(){
+  const arr=AXES.map(a=>({id:a.id,s:axisScore(a.id)})).filter(x=>x.s!=null).sort((a,b)=>a.s-b.s);
+  return arr.length?arr:AXES.map(a=>({id:a.id,s:null}));
+}
+function doneToday(kind){return S.log.some(e=>e.d===today()&&e.kind===kind)}
+function streak(){
+  const days=new Set(S.log.map(e=>e.d));let n=0;const d=new Date();
+  if(!days.has(today()))d.setDate(d.getDate()-1);
+  for(;;){const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(days.has(k)){n++;d.setDate(d.getDate()-1)}else break}
+  return n;
+}
+
+/* ============================== charts ============================== */
+function radar(series,size){
+  size=size||300;const cx=size/2,cy=size/2,R=size/2-58;const n=AXES.length;
+  const pt=(i,v)=>{const a=-Math.PI/2+i*2*Math.PI/n;return[cx+Math.cos(a)*R*v,cy+Math.sin(a)*R*v]};
+  let g='';
+  [.25,.5,.75,1].forEach(l=>{g+=`<polygon points="${AXES.map((_,i)=>pt(i,l).join(',')).join(' ')}" fill="none" stroke="var(--line-2)" stroke-width="1"/>`});
+  AXES.forEach((a,i)=>{const[x,y]=pt(i,1);g+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="var(--line)"/>`;
+    const[lx,ly]=pt(i,1.2);const anchor=Math.abs(lx-cx)<8?'middle':lx>cx?'start':'end';
+    g+=`<text x="${lx}" y="${ly+4}" text-anchor="${anchor}" font-size="11.5" fill="var(--muted)" font-weight="600">${esc(a.short)}</text>`});
+  series.forEach(s=>{
+    const pts=AXES.map((a,i)=>pt(i,Math.max(.03,s.vals[a.id]??0)));
+    g+=`<polygon points="${pts.map(p=>p.join(',')).join(' ')}" fill="${s.fill}" stroke="${s.stroke}" stroke-width="2" ${s.dash?'stroke-dasharray="4 4"':''}/>`;
+    if(!s.dash)pts.forEach((p,i)=>{g+=`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="${s.stroke}"/>`});
+  });
+  return `<svg viewBox="-40 0 ${size+80} ${size}" width="100%" style="max-width:${size+80}px;display:block;margin:0 auto" role="img" aria-label="Профиль навыков">${g}</svg>`;
+}
+function lineChart(points,opts){
+  opts=opts||{};const W=600,H=170,pl=34,pr=12,pt=12,pb=26;
+  if(points.length<2)return `<p class="muted">Нужно минимум два дня тренировок, чтобы появился график.</p>`;
+  const xs=i=>pl+i*(W-pl-pr)/(points.length-1);const ys=v=>pt+(1-v)*(H-pt-pb);
+  let g='';[0,.25,.5,.75,1].forEach(v=>{g+=`<line x1="${pl}" x2="${W-pr}" y1="${ys(v)}" y2="${ys(v)}" stroke="var(--line)"/><text x="${pl-6}" y="${ys(v)+4}" text-anchor="end" font-size="10" fill="var(--faint)">${pct(v)}</text>`});
+  const path=points.map((p,i)=>(i?'L':'M')+xs(i)+','+ys(p.v)).join(' ');
+  g+=`<path d="${path} L${xs(points.length-1)},${ys(0)} L${xs(0)},${ys(0)} Z" fill="var(--brass)" opacity=".12"/>`;
+  g+=`<path d="${path}" fill="none" stroke="var(--brass)" stroke-width="2.2"/>`;
+  const step=Math.ceil(points.length/7);
+  points.forEach((p,i)=>{if(i%step===0||i===points.length-1)g+=`<text x="${xs(i)}" y="${H-8}" text-anchor="middle" font-size="10" fill="var(--faint)">${esc(p.l)}</text>`});
+  const last=points[points.length-1];g+=`<circle cx="${xs(points.length-1)}" cy="${ys(last.v)}" r="4.5" fill="var(--brass)"/>`;
+  return `<div class="scroll-x"><svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:340px;display:block" role="img" aria-label="${esc(opts.label||'График')}">${g}</svg></div>`;
+}
+function barsHTML(rows){return `<div class="bars">${rows.map(r=>{const v=r.v;const col=v==null?'var(--faint)':v>=.75?'var(--good)':v>=.55?'var(--warn)':'var(--bad)';return `<div class="bar"><span>${esc(r.l)}</span><span class="t"><i style="width:${v==null?0:pct(v)}%;background:${col}"></i></span><span class="n">${v==null?'—':pct(v)+'%'}</span></div>`}).join('')}</div>`}
+
+/* ============================== scenario renderer ============================== */
+function tableHTML(q){
+  const hasHero=q.hero&&cardsOf(q.hero),hasBoard=q.board&&cardsOf(q.board);
+  if(!hasHero&&!hasBoard&&q.pot==null&&q.stack==null&&!q.pos)return '';
+  return `<div class="table">
+    <div class="slot"><span class="lab">Твои карты</span>${hasHero?`<span class="cards">${cardsOf(q.hero)}</span>`:`<span class="cards"><span class="pc back"></span><span class="pc back"></span></span>`}</div>
+    <div class="slot mid"><span class="lab">${q.pos?esc(q.pos):'Борд'}</span>${hasBoard?`<span class="cards">${cardsOf(q.board)}</span>`:`<span class="faint" style="font-size:13px">префлоп</span>`}</div>
+    <div class="nums">${q.pot!=null?`<span class="lab">Банк</span><span class="num">${esc(q.pot)} bb</span>`:''}${q.stack!=null?`<span class="lab">Эфф. стек</span><span class="num">${esc(q.stack)} bb</span>`:''}</div>
+  </div>`;
+}
+const LVL=['','базовый','средний','продвинутый'];
+
+/* ============================== router ============================== */
+const TABS=[
+  {id:'home',name:'Штаб'},{id:'diag',name:'Диагностика'},{id:'train',name:'Тренажёр'},
+  {id:'ranges',name:'Диапазоны'},{id:'players',name:'Досье игроков'},{id:'speed',name:'Счёт на скорость'},{id:'ai',name:'AI-тренер'},
+  {id:'mental',name:'Ментал'},{id:'plan',name:'План'},
+];
+let tab='home';
+try{const t=localStorage.getItem(LS_KEY+'.tab');if(t&&TABS.some(x=>x.id===t))tab=t}catch(e){}
+if(location.hash&&TABS.some(x=>x.id===location.hash.slice(1)))tab=location.hash.slice(1);
+function go(t){stopTimers();tab=t;try{localStorage.setItem(LS_KEY+'.tab',t)}catch(e){}renderTabs();render();window.scrollTo({top:0})}
+function renderTabs(){$('#tabs').innerHTML=TABS.map(t=>`<button role="tab" aria-selected="${t.id===tab}" data-go="${t.id}">${t.name}</button>`).join('')}
+let timers=[];function stopTimers(){timers.forEach(clearInterval);timers=[]}
+function rerender(){if(!busy)render()}
+let busy=false;
+function render(){
+  const m=$('#main');
+  const f={home:renderHome,diag:renderDiag,train:renderTrain,ranges:renderRanges,players:renderDossier,speed:renderSpeed,ai:renderAI,mental:renderMental,plan:renderPlan}[tab];
+  m.innerHTML=`<section class="screen">${f()}</section>`;
+  if(after){const a=after;after=null;a()}
+}
+let after=null;
+document.addEventListener('click',e=>{
+  const g=e.target.closest('[data-go]');if(g){go(g.dataset.go);return}
+  const a=e.target.closest('[data-act]');if(a&&ACTS[a.dataset.act]){ACTS[a.dataset.act](a,e)}
+});
+const ACTS={};
+
+/* ============================== HOME ============================== */
+function archetype(){
+  if(!S.diag)return null;const ax=S.diag.axes;const g=id=>ax[id]?ax[id].score:0;
+  const tech=(g('math')+g('preflop')+g('postflop'))/3,read=(g('ranges')+g('exploit'))/2,head=g('mental');
+  const cal=S.diag.calib;
+  let a;
+  if(tech>=.7&&read<.55)a={n:'Технарь',d:'Ты хорошо знаешь «как правильно», но играешь против карт, а не против людей. Деньги на твоём уровне лежат в чтении конкретного оппонента: кто перебластит, кто никогда не блефует, у кого сайзинг рассказывает о руке.',f:['ranges','exploit']};
+  else if(read>=.7&&tech<.55)a={n:'Чуйщик',d:'Ты чувствуешь людей и линии, но фундамент под чтением шаткий. Без точной математики и базовой стратегии хорошие риды превращаются в дорогие догадки. Цементируем технику, чтобы твои риды стали оружием.',f:['math','postflop']};
+  else if(tech>=.7&&read>=.7&&head<.6)a={n:'Сильный, но хрупкий',d:'Покерные навыки выше среднего, но голова — бутылочное горлышко. Чаще всего такой игрок отдаёт свой винрейт в C-game: после бэдбитов, на длинных сессиях, в погоне за отыгрышем.',f:['mental']};
+  else if(tech>=.7&&read>=.7)a={n:'Готов к следующему лимиту',d:'Сильная база по всем осям. Дальше рост идёт за счёт тонких спотов: частоты, блокеры, нестандартные сайзинги и глубокий разбор собственных сессий.',f:[]};
+  else if(tech<.5&&read<.5)a={n:'Строитель фундамента',d:'Опыт есть, но решения пока держатся на привычках, а не на расчёте. Хорошая новость: это самая быстрая фаза роста. Первые 3 недели автоматизируем счёт и чтение диапазонов.',f:['math','ranges']};
+  else a={n:'Универсал в развитии',d:'Ровный профиль без провалов и без явных козырей. Растём через самые слабые оси, по одной за раз, с еженедельной проверкой.',f:[]};
+  if(cal!=null){
+    if(cal>.12)a.cal='Ты переоцениваешь себя: уверенность выше точности на '+pct(cal)+' п.п. За столом это выглядит как «я был уверен, что он блефует». Лечится привычкой проговаривать альтернативы перед решением.';
+    else if(cal<-.12)a.cal='Ты недооцениваешь себя: точность выше уверенности на '+pct(-cal)+' п.п. За столом это пассивность и лишние фолды в пограничных спотах. Доверяй расчёту.';
+    else a.cal='Калибровка хорошая: твоя уверенность совпадает с реальной точностью. Это редкое и ценное качество.';
+  }
+  return a;
+}
+function renderHome(){
+  const a=archetype();const st=streak();const due=dueQs().length;
+  const totalAns=Object.values(S.stats).reduce((s,x)=>s+x.t,0);
+  const totalOk=Object.values(S.stats).reduce((s,x)=>s+x.c,0);
+  const weak=weakestAxes();
+  const routine=[
+    {k:'speed',t:'Разминка: счёт на скорость',s:'15 задач, 12 секунд на каждую. Математика должна стать рефлексом.',go:'speed'},
+    {k:'drill',t:'Смарт-микс: 12 спотов',s:due?`В очереди повторения ${due} ошибок — они пойдут первыми.`:'Подбор по твоим слабым осям.',go:'train'},
+    {k:'range',t:'Один диапазон руками',s:'Нарисуй диапазон из памяти, сверься с эталоном.',go:'ranges'},
+    {k:'pre',t:'Ритуал перед игрой',s:'Чек-лист готовности: 2 минуты, отсекает C-game на входе.',go:'mental'},
+    {k:'journal',t:'Разбор после сессии',s:'A/B/C-game, тилт, одна раздача на разбор.',go:'mental'},
+  ];
+  const nDone=routine.filter(r=>doneToday(r.k)).length;
+  let html=`<div class="hero">
+    <span class="eyebrow">Тренерский штаб</span>
+    <h1>${S.diag?'Сегодняшняя тренировка':'Сначала узнаем, где ты теряешь деньги'}</h1>
+    <p>${S.diag?'Каждый день одна и та же структура: разминка, споты по слабым местам, работа с диапазонами, ритуал до игры и разбор после. Профиль обновляется с каждым ответом.':'Я не даю программу вслепую. 24 спота по шести осям мастерства, плюс проверка того, насколько точно ты оцениваешь собственную уверенность. По итогам получишь профиль, тип игрока и план на 8 недель.'}</p>
+    ${S.diag?'':`<div class="row" style="margin-top:6px"><button class="btn primary" data-go="diag">Пройти диагностику · ~15 минут</button><span class="faint" style="font-size:13px">Без спешки. Отвечай так, как сыграл бы за столом.</span></div>`}
+  </div>`;
+  if(S.diag){
+    html+=`<div class="panel stack"><div class="row" style="justify-content:space-between"><h2>Ежедневная программа</h2><span class="pill ${nDone===routine.length?'good':'brass'}">${nDone} из ${routine.length}</span></div>
+      <div>${routine.map(r=>{const d=doneToday(r.k);return `<div class="check ${d?'done':''}"><input type="checkbox" id="rt-${r.k}" ${d?'checked':''} data-act="routine" data-k="${r.k}"><label for="rt-${r.k}"><span>${esc(r.t)}</span><br><span class="sub">${esc(r.s)}</span></label><button class="btn small" data-go="${r.go}">Открыть</button></div>`}).join('')}</div></div>`;
+  }
+  html+=`<div class="grid3">
+    <div class="panel tight stat"><span class="v">${st}</span><span class="l">дней подряд</span></div>
+    <div class="panel tight stat"><span class="v">${totalAns?pct(totalOk/totalAns)+'%':'—'}</span><span class="l">точность в тренажёре · ${totalAns} ответов</span></div>
+    <div class="panel tight stat"><span class="v">${due}</span><span class="l">ошибок ждут повторения</span></div>
+  </div>`;
+  if(S.diag){
+    const now={},first={};AXES.forEach(x=>{now[x.id]=axisScore(x.id)??0});
+    const f0=S.diagHistory[0]||S.diag;AXES.forEach(x=>{first[x.id]=f0.axes[x.id]?f0.axes[x.id].score:0});
+    html+=`<div class="grid2">
+      <div class="panel stack"><div class="stack-s"><span class="eyebrow">Профиль навыков</span><h2>Где ты сейчас</h2></div>
+        ${radar([{vals:first,fill:'none',stroke:'var(--faint)',dash:true},{vals:now,fill:'rgba(217,173,85,.22)',stroke:'var(--brass)'}])}
+        <div class="legend"><span><i style="background:var(--brass)"></i>сейчас (диагностика + тренажёр)</span><span><i style="background:transparent;box-shadow:inset 0 0 0 1.5px var(--faint)"></i>первая диагностика</span></div>
+      </div>
+      <div class="stack">
+        ${a?`<div class="archetype stack-s"><span class="eyebrow">Твой тип сейчас</span><h2>${esc(a.n)}</h2><p>${esc(a.d)}</p>${a.cal?`<p class="muted" style="font-size:14px">${esc(a.cal)}</p>`:''}</div>`:''}
+        <div class="panel stack-s"><h3>Приоритет на эту неделю</h3>
+          ${weak.slice(0,2).map((w,i)=>`<div class="row" style="justify-content:space-between"><span><b>${i+1}. ${esc(AXIS[w.id].name)}</b><br><span class="muted" style="font-size:13px">${esc(AXIS[w.id].desc)}</span></span><button class="btn small" data-act="train-cat" data-cat="${w.id}">Тренировать</button></div>`).join('<hr class="divider">')}
+        </div>
+      </div>
+    </div>`;
+    // trend
+    const byDay={};S.log.filter(e=>e.kind==='drill'||e.kind==='speed').forEach(e=>{const b=byDay[e.d]||(byDay[e.d]={c:0,t:0});b.c+=e.c;b.t+=e.t});
+    const pts=Object.keys(byDay).sort().slice(-21).map(d=>({l:fmtDate(d),v:byDay[d].t?byDay[d].c/byDay[d].t:0}));
+    html+=`<div class="panel stack"><div class="row" style="justify-content:space-between"><h2>Точность по дням</h2><span class="faint" style="font-size:13px">тренажёр и счёт, последние 3 недели</span></div>${lineChart(pts,{label:'Точность по дням'})}
+      <h3 style="margin-top:6px">Точность по осям в тренажёре</h3>${barsHTML(AXES.map(x=>{const s=S.stats[x.id];return{l:x.name,v:s&&s.t?s.c/s.t:null}}))}</div>`;
+  }else{
+    html+=`<div class="panel stack"><span class="eyebrow">Как устроен штаб</span><h2>Шесть осей мастерства</h2>
+      <div class="grid3">${AXES.map(x=>`<div class="stack-s"><h3>${esc(x.name)}</h3><p class="muted" style="font-size:14px">${esc(x.desc)}</p></div>`).join('')}</div>
+      <hr class="divider"><div class="grid3">
+        <div class="stack-s"><h3>Тренажёр с памятью</h3><p class="muted" style="font-size:14px">Ошибки возвращаются через 8 минут, потом через 1, 3, 7, 16 и 35 дней, пока не закрепятся.</p></div>
+        <div class="stack-s"><h3>AI-разбор раздач</h3><p class="muted" style="font-size:14px">Вставь свою раздачу и получи разбор по улицам с учётом твоего профиля. Генерация новых задач под твои слабые места.</p></div>
+        <div class="stack-s"><h3>Голова как навык</h3><p class="muted" style="font-size:14px">Профиль тилта, ритуалы до и после игры, журнал A/B/C-game.</p></div>
+      </div></div>
+      <div class="panel stack"><span class="eyebrow">Пример спота из тренажёра</span>${scenarioPreview()}</div>`;
+  }
+  return html;
+}
+function scenarioPreview(){
+  const q=BANK.find(x=>x.cat==='ranges'&&x.board&&x.hero)||BANK[0];if(!q)return '';
+  return `${tableHTML(q)}<p class="q-text">${tx(q.q)}</p><div class="opts">${q.opts.map((o,i)=>`<div class="opt" style="cursor:default"><span class="k">${'ABCD'[i]}</span><span>${tx(o)}</span></div>`).join('')}</div><p class="faint" style="font-size:13px">Ответ и разбор откроются в тренажёре после диагностики.</p>`;
+}
+ACTS.routine=(el)=>{const k=el.dataset.k;if(el.checked){if(!doneToday(k)){logEvent(k,null,0,0);save()}}else{S.log=S.log.filter(e=>!(e.d===today()&&e.kind===k));save()}render()};
+ACTS['train-cat']=(el)=>{T.cat=el.dataset.cat;T.session=null;go('train')};
+
+/* ============================== DIAGNOSTIC ============================== */
+const D={phase:'intro',qs:[],i:0,ans:[],sel:null,conf:null,t0:0,profile:{}};
+function buildDiag(){
+  const out=[];
+  AXES.forEach(ax=>{
+    const pool=BANK.filter(q=>q.cat===ax.id);
+    const by=l=>shuffle(pool.filter(q=>q.level===l));
+    let chosen=[...by(1).slice(0,1),...by(2).slice(0,2),...by(3).slice(0,1)];
+    if(chosen.length<4)chosen=chosen.concat(shuffle(pool.filter(q=>!chosen.includes(q))).slice(0,4-chosen.length));
+    out.push(chosen);
+  });
+  const res=[];for(let i=0;i<4;i++)shuffle(AXES.map((_,k)=>k)).forEach(k=>{if(out[k][i])res.push(out[k][i])});
+  return res;
+}
+const PROFILE_Q=[
+  {k:'format',l:'Основной формат',o:['Кэш 6-max онлайн','Кэш фулринг онлайн','Живой кэш','MTT','Спины / SNG','Смешанно']},
+  {k:'stakes',l:'Лимиты',o:['NL2–NL10','NL16–NL50','NL100–NL200','NL500+','Живые 1/2–2/5','Выше']},
+  {k:'volume',l:'Сыграно рук за всё время',o:['до 100k','100k–500k','500k–1M','1M+','Считаю в часах вживую']},
+  {k:'study',l:'Как сейчас учишься',o:['Почти не учусь','Видео и статьи','Солвер иногда','Солвер регулярно','Есть тренер / группа']},
+  {k:'leak',l:'Где, по-твоему, главная дыра',o:['Ривер-решения','Игра против рекреационалов','Против регуляров','3-бет поты','Тилт / дисциплина','Не знаю — для этого и тест']},
+];
+function renderDiag(){
+  if(D.phase==='intro'){
+    const p=S.profile||{};
+    return `<div class="hero"><span class="eyebrow">Входная диагностика</span><h1>24 спота, 6 осей, одна проверка честности</h1>
+      <p>Во время теста я не показываю правильные ответы, чтобы результат не искажался. После каждого ответа отметь уверенность: так мы измерим калибровку. Сильные игроки знают не только ответ, но и насколько они в нём уверены.</p></div>
+      ${S.diag?`<div class="panel row" style="justify-content:space-between"><span>Последняя диагностика: <b>${esc(fmtDate(S.diag.date))}</b>, итог <b>${pct(S.diag.total)}%</b>. Повторяй раз в 4 недели, чтобы видеть рост.</span><button class="btn small" data-act="diag-result">Открыть результат</button></div>`:''}
+      <div class="panel stack"><h2>Кто ты за столом</h2><p class="muted">Это нужно AI-тренеру и плану. Можно пропустить.</p>
+        ${PROFILE_Q.map(q=>`<div class="field"><span class="lbl">${esc(q.l)}</span><div class="seg">${q.o.map(o=>`<button aria-pressed="${p[q.k]===o}" data-act="prof" data-k="${q.k}" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div></div>`).join('')}
+        <div class="row"><button class="btn primary" data-act="diag-start">Начать диагностику</button><span class="faint" style="font-size:13px">${BANK.length} спотов в банке, в тест попадёт 24 случайных с балансом сложности.</span></div>
+      </div>`;
+  }
+  if(D.phase==='q'){
+    const q=D.qs[D.i];
+    return `<div class="row" style="justify-content:space-between"><span class="eyebrow">Диагностика · ${D.i+1} из ${D.qs.length}</span><span class="pill">${esc(LVL[q.level]||'')}</span></div>
+      <div class="progress"><i style="width:${pct(D.i/D.qs.length)}%"></i></div>
+      <div class="panel stack">${tableHTML(q)}<p class="q-text">${tx(q.q)}</p>
+        <div class="opts">${q.opts.map((o,i)=>`<button class="opt ${D.sel===i?'sel':''}" data-act="diag-sel" data-i="${i}"><span class="k">${'ABCD'[i]}</span><span>${tx(o)}</span></button>`).join('')}</div>
+        <div class="stack-s"><span class="lbl muted" style="font-size:13px;font-weight:600">Насколько ты уверен?</span>
+          <div class="conf">${[[.4,'Угадываю'],[.6,'Скорее да'],[.8,'Уверен'],[.95,'Точно знаю']].map(([v,l])=>`<button aria-pressed="${D.conf===v}" data-act="diag-conf" data-v="${v}">${l}</button>`).join('')}</div></div>
+        <div class="row"><button class="btn primary" data-act="diag-next" ${D.sel==null||D.conf==null?'disabled':''}>${D.i===D.qs.length-1?'Завершить':'Дальше'}</button><span class="faint" style="font-size:13px">Нужно выбрать ответ и уверенность</span></div>
+      </div>`;
+  }
+  return renderDiagResult();
+}
+ACTS.prof=(el)=>{S.profile=S.profile||{};const k=el.dataset.k,v=el.dataset.v;S.profile[k]=S.profile[k]===v?undefined:v;save();render()};
+ACTS['diag-start']=()=>{D.qs=buildDiag();D.i=0;D.ans=[];D.sel=null;D.conf=null;D.t0=Date.now();D.phase='q';render()};
+ACTS['diag-sel']=(el)=>{D.sel=+el.dataset.i;render()};
+ACTS['diag-conf']=(el)=>{D.conf=+el.dataset.v;render()};
+ACTS['diag-result']=()=>{D.phase='result';render()};
+ACTS['diag-next']=()=>{
+  if(D.sel==null||D.conf==null)return;
+  const q=D.qs[D.i];D.ans.push({id:q.id,cat:q.cat,lvl:q.level,sel:D.sel,ok:D.sel===q.ans,conf:D.conf,ms:Date.now()-D.t0});
+  D.i++;D.sel=null;D.conf=null;D.t0=Date.now();
+  if(D.i>=D.qs.length)finishDiag();
+  render();window.scrollTo({top:0});
+};
+function finishDiag(){
+  const axes={};
+  AXES.forEach(a=>{const xs=D.ans.filter(x=>x.cat===a.id);const w=xs.reduce((s,x)=>s+x.lvl,0);const g=xs.reduce((s,x)=>s+(x.ok?x.lvl:0),0);axes[a.id]={score:w?g/w:0,c:xs.filter(x=>x.ok).length,t:xs.length}});
+  const acc=D.ans.filter(x=>x.ok).length/D.ans.length;
+  const conf=D.ans.reduce((s,x)=>s+x.conf,0)/D.ans.length;
+  const tw=AXES.reduce((s,a)=>s+axes[a.id].score,0)/AXES.length;
+  const res={date:today(),axes,total:tw,acc,calib:conf-acc,answers:D.ans};
+  S.diag=res;S.diagHistory.push(res);
+  D.ans.forEach(x=>{const q=qById(x.id);if(q&&!x.ok){S.srs[q.id]={box:0,due:Date.now(),seen:1,wrong:1}}});
+  if(!S.plan.start)S.plan.start=today();
+  logEvent('diag',null,D.ans.filter(x=>x.ok).length,D.ans.length);
+  save();D.phase='result';
+}
+function renderDiagResult(){
+  const r=S.diag;if(!r){D.phase='intro';return renderDiag()}
+  const a=archetype();const vals={};AXES.forEach(x=>vals[x.id]=r.axes[x.id]?r.axes[x.id].score:0);
+  const prev=S.diagHistory.length>1?S.diagHistory[S.diagHistory.length-2]:null;
+  const series=[];if(prev){const pv={};AXES.forEach(x=>pv[x.id]=prev.axes[x.id]?prev.axes[x.id].score:0);series.push({vals:pv,fill:'none',stroke:'var(--faint)',dash:true})}
+  series.push({vals,fill:'rgba(217,173,85,.22)',stroke:'var(--brass)'});
+  // calibration buckets
+  const buckets=[.4,.6,.8,.95].map(c=>{const xs=r.answers.filter(x=>x.conf===c);return{c,n:xs.length,acc:xs.length?xs.filter(x=>x.ok).length/xs.length:null}});
+  const avgMs=r.answers.reduce((s,x)=>s+x.ms,0)/r.answers.length;
+  const weak=AXES.slice().sort((x,y)=>vals[x.id]-vals[y.id]);
+  return `<div class="hero"><span class="eyebrow">Результат диагностики · ${esc(fmtDate(r.date))}</span>
+      <div class="row" style="align-items:flex-end;gap:18px"><span class="big-num">${pct(r.total)}%</span><span class="muted" style="padding-bottom:8px">взвешенный балл (сложные споты весят больше) · ${r.answers.filter(x=>x.ok).length}/${r.answers.length} верно · ~${Math.round(avgMs/1000)} с на спот</span></div></div>
+    <div class="grid2">
+      <div class="panel stack">${radar(series)}${prev?`<div class="legend"><span><i style="background:var(--brass)"></i>сейчас</span><span><i style="background:transparent;box-shadow:inset 0 0 0 1.5px var(--faint)"></i>прошлая диагностика</span></div>`:''}
+        ${barsHTML(AXES.map(x=>({l:x.name,v:vals[x.id]})))}</div>
+      <div class="stack">
+        ${a?`<div class="archetype stack-s"><span class="eyebrow">Тип игрока</span><h2>${esc(a.n)}</h2><p>${esc(a.d)}</p></div>`:''}
+        <div class="panel stack-s"><h3>Калибровка уверенности</h3><p class="muted" style="font-size:14px">${esc(a&&a.cal||'')}</p>
+          <table class="mini"><thead><tr><th>Твоя уверенность</th><th>Ответов</th><th>Реально верно</th></tr></thead><tbody>
+          ${buckets.map(b=>`<tr><td>${pct(b.c)}%</td><td class="mono">${b.n}</td><td class="mono" style="color:${b.acc==null?'var(--faint)':Math.abs(b.acc-b.c)<=.15?'var(--good)':'var(--warn)'}">${b.acc==null?'—':pct(b.acc)+'%'}</td></tr>`).join('')}
+          </tbody></table></div>
+        <div class="panel stack-s"><h3>Тренерское предписание</h3>
+          <p>Первые две недели плана перестроены под оси <b>${esc(weak[0].name)}</b> и <b>${esc(weak[1].name)}</b>. Все ${r.answers.filter(x=>!x.ok).length} ошибок уже в очереди повторения.</p>
+          <div class="row" style="margin-top:6px"><button class="btn primary" data-act="train-cat" data-cat="${weak[0].id}">Тренировать: ${esc(weak[0].name)}</button><button class="btn" data-go="plan">Открыть план</button></div></div>
+      </div>
+    </div>
+    <div class="panel stack"><div class="row" style="justify-content:space-between"><h2>Разбор каждого ответа</h2><button class="btn small" data-act="diag-start">Пройти заново</button></div>
+      ${r.answers.map((x,i)=>{const q=qById(x.id);if(!q)return '';return `<details class="week"><summary><span class="row" style="gap:8px;min-width:0"><span class="pill ${x.ok?'good':'bad'}">${x.ok?'верно':'ошибка'}</span><span class="faint" style="font-size:13px">${esc(AXIS[q.cat].name)}</span></span><span class="faint mono" style="font-size:12px">#${i+1} · ${pct(x.conf)}%</span></summary><div class="wb stack">${tableHTML(q)}<p class="q-text">${tx(q.q)}</p><div class="opts">${q.opts.map((o,k)=>`<div class="opt ${k===q.ans?'right':k===x.sel?'wrong':''}"><span class="k">${'ABCD'[k]}</span><span>${tx(o)}</span></div>`).join('')}</div><div class="why">${tx(q.why)}</div></div></details>`}).join('')}
+    </div>`;
+}
+
+/* ============================== TRAINER ============================== */
+const T={cat:'smart',session:null};
+function buildSession(cat,n){
+  n=n||12;const all=allQs();const now=Date.now();
+  let pool=cat==='smart'?all:cat==='review'?dueQs():all.filter(q=>q.cat===cat);
+  const due=shuffle(pool.filter(q=>S.srs[q.id]&&S.srs[q.id].due<=now));
+  const fresh=shuffle(pool.filter(q=>!S.srs[q.id]));
+  const later=pool.filter(q=>S.srs[q.id]&&S.srs[q.id].due>now).sort((a,b)=>S.srs[a.id].due-S.srs[b.id].due);
+  let out=due.slice(0,Math.ceil(n*.5));
+  if(cat==='smart'){
+    const w=weakestAxes();const weights={};w.forEach((x,i)=>weights[x.id]=Math.max(1,w.length-i));
+    const f2=fresh.slice().sort((a,b)=>(weights[b.cat]||1)*Math.random()-(weights[a.cat]||1)*Math.random());
+    out=out.concat(f2.slice(0,n-out.length));
+  }else out=out.concat(fresh.slice(0,n-out.length));
+  if(out.length<n)out=out.concat(due.filter(q=>!out.includes(q)).slice(0,n-out.length));
+  if(out.length<n)out=out.concat(later.filter(q=>!out.includes(q)).slice(0,n-out.length));
+  return{cat,qs:shuffle(out).slice(0,n),i:0,sel:null,done:false,c:0,res:[]};
+}
+function renderTrain(){
+  const s=T.session;
+  if(!s){
+    const due=dueQs().length;
+    const cnt=id=>allQs().filter(q=>q.cat===id).length;
+    return `<div class="hero"><span class="eyebrow">Тренажёр</span><h1>Споты с разбором мышления</h1><p>Каждый ответ сопровождается объяснением процесса: что учесть, в каком порядке думать, почему альтернативы хуже. Ошибки возвращаются по интервалам, пока не закрепятся.</p></div>
+      <div class="grid3">
+        <button class="panel stack-s" style="text-align:left" data-act="t-start" data-cat="smart"><span class="eyebrow">Рекомендую</span><h3>Смарт-микс</h3><span class="muted" style="font-size:14px">12 спотов. Сначала повторение ошибок, затем новые с упором на слабые оси.</span></button>
+        <button class="panel stack-s" style="text-align:left" data-act="t-start" data-cat="review" ${due?'':'disabled'}><span class="eyebrow">${due} в очереди</span><h3>Работа над ошибками</h3><span class="muted" style="font-size:14px">Только споты, где ты ошибался и пришло время повторить.</span></button>
+        ${AXES.map(a=>{const sc=axisScore(a.id);return `<button class="panel stack-s" style="text-align:left" data-act="t-start" data-cat="${a.id}"><span class="row" style="justify-content:space-between"><span class="eyebrow">${cnt(a.id)} спотов</span>${sc!=null?`<span class="pill ${sc>=.75?'good':sc>=.55?'warn':'bad'}">${pct(sc)}%</span>`:''}</span><h3>${esc(a.name)}</h3><span class="muted" style="font-size:14px">${esc(a.desc)}</span></button>`}).join('')}
+      </div>`;
+  }
+  if(s.done){
+    const acc=s.qs.length?s.c/s.qs.length:0;
+    return `<div class="hero"><span class="eyebrow">Сессия завершена</span><div class="row" style="align-items:flex-end;gap:18px"><span class="big-num">${s.c}/${s.qs.length}</span><span class="muted" style="padding-bottom:8px">${acc>=.8?'Сильно. Следующая сессия пойдёт сложнее за счёт новых спотов.':acc>=.6?'Нормально. Ошибки вернутся к тебе через 8 минут и завтра.':'Здесь есть работа. Перечитай разборы ниже: важен ход мысли, а не ответ.'}</span></div></div>
+      <div class="row"><button class="btn primary" data-act="t-start" data-cat="${s.cat}">Ещё 12 спотов</button><button class="btn" data-act="t-menu">К выбору режима</button>${sampleFn?`<button class="btn" data-act="ai-gen-from" data-cat="${s.cat==='smart'||s.cat==='review'?weakestAxes()[0].id:s.cat}">Сгенерировать новые споты с AI</button>`:''}</div>
+      <div class="panel stack"><h2>Ошибки этой сессии</h2>${s.res.filter(r=>!r.ok).length?s.res.filter(r=>!r.ok).map(r=>{const q=qById(r.id);return q?`<div class="stack-s"><p><b>${esc(AXIS[q.cat]?.name||'')}</b> · <span class="muted">${esc(q.tag||'')}</span></p><p class="muted" style="font-size:14px">${tx(q.q.slice(0,180))}${q.q.length>180?'…':''}</p><div class="why">${tx(q.why)}</div></div>`:''}).join('<hr class="divider">'):'<p class="muted">Ни одной ошибки.</p>'}</div>`;
+  }
+  const q=s.qs[s.i];const answered=s.sel!=null;
+  return `<div class="row" style="justify-content:space-between"><span class="eyebrow">${esc(s.cat==='smart'?'Смарт-микс':s.cat==='review'?'Работа над ошибками':AXIS[s.cat].name)} · ${s.i+1} из ${s.qs.length}</span><span class="row" style="gap:6px"><span class="pill">${esc(AXIS[q.cat]?.name||'')}</span><span class="pill">${esc(LVL[q.level]||'')}</span>${q.ai?'<span class="pill brass">AI</span>':''}${S.srs[q.id]&&S.srs[q.id].wrong?'<span class="pill warn">повтор</span>':''}</span></div>
+    <div class="progress"><i style="width:${pct(s.i/s.qs.length)}%"></i></div>
+    <div class="panel stack">${tableHTML(q)}<p class="q-text">${tx(q.q)}</p>
+      <div class="opts">${q.opts.map((o,i)=>{let c='';if(answered){if(i===q.ans)c='right';else if(i===s.sel)c='wrong'}return `<button class="opt ${c}" data-act="t-ans" data-i="${i}" ${answered?'disabled':''}><span class="k">${'ABCD'[i]}</span><span>${tx(o)}</span></button>`}).join('')}</div>
+      ${answered?`<div class="why ${s.sel===q.ans?'good':'bad'}"><b>${s.sel===q.ans?'Верно.':'Неверно.'}</b> ${tx(q.why)}${q.tag?`<div class="faint" style="font-size:12.5px;margin-top:6px">Навык: ${esc(q.tag)}</div>`:''}</div>
+        <div class="row"><button class="btn primary" data-act="t-next">${s.i===s.qs.length-1?'Итоги':'Следующий спот'}</button>${sampleFn?`<button class="btn small" data-act="t-ask">Спросить тренера про этот спот</button>`:''}</div><div id="t-ai"></div>`:''}
+    </div>`;
+}
+ACTS['t-start']=(el)=>{const c=el.dataset.cat;T.cat=c;T.session=buildSession(c);if(!T.session.qs.length){T.session=null;toast('Пока нет спотов в этом режиме')}render();window.scrollTo({top:0})};
+ACTS['t-menu']=()=>{T.session=null;render()};
+ACTS['t-ans']=(el)=>{const s=T.session;if(s.sel!=null)return;const q=s.qs[s.i];s.sel=+el.dataset.i;const ok=s.sel===q.ans;if(ok)s.c++;s.res.push({id:q.id,ok});recordAnswer(q,ok);save();render()};
+ACTS['t-next']=()=>{const s=T.session;s.i++;s.sel=null;if(s.i>=s.qs.length){s.done=true;const byCat={};s.res.forEach(r=>{const q=qById(r.id);if(!q)return;const b=byCat[q.cat]||(byCat[q.cat]={c:0,t:0});b.t++;if(r.ok)b.c++});Object.entries(byCat).forEach(([c,b])=>logEvent('drill',c,b.c,b.t));save()}render();window.scrollTo({top:0})};
+ACTS['t-ask']=async(el)=>{
+  const s=T.session;const q=s.qs[s.i];const box=$('#t-ai');if(!box||!sampleFn)return;
+  el.disabled=true;box.innerHTML=`<div class="panel tight ai-out">Тренер думает…</div>`;
+  const prompt=COACH_RULES+`\n\nУченик только что решал спот из тренажёра и выбрал вариант «${q.opts[s.sel]}». Правильный ответ по ключу: «${q.opts[q.ans]}».\n\nСпот: ${q.q}\nКарты героя: ${q.hero||'—'}; борд: ${q.board||'—'}; банк: ${q.pot??'—'} bb; эфф. стек: ${q.stack??'—'} bb; позиции: ${q.pos||'—'}.\nВарианты: ${q.opts.map((o,i)=>'ABCD'[i]+') '+o).join('; ')}\nРазбор из ключа: ${q.why}\n\nОбъясни глубже, чем ключ: (1) как сильный игрок раскладывает этот спот по шагам, (2) почему выбранный учеником вариант ${s.sel===q.ans?'верен и какая альтернатива ближе всего':'хуже и при каких условиях он стал бы верным'}, (3) одно общее правило, которое переносится на похожие споты. Если считаешь, что ключ спорный, скажи прямо и объясни. До 220 слов.`;
+  try{await sampleFn(prompt,{modelTier:'default',onText:({text})=>{box.innerHTML=`<div class="panel tight ai-out">${esc(text)}</div>`}})}
+  catch(e){box.innerHTML=`<div class="panel tight muted">${esc(sampleErr(e))}</div>`}
+  el.disabled=false;
+};
+
+/* ============================== RANGES ============================== */
+function handAt(i,j){if(i===j)return RANKS[i]+RANKS[j];return i<j?RANKS[i]+RANKS[j]+'s':RANKS[j]+RANKS[i]+'o'}
+function combos(h){return h.length===2?6:h[2]==='s'?4:12}
+function expand(tok){
+  tok=tok.trim();if(!tok)return[];const R=RANKS,ix=c=>R.indexOf(c);const out=[];
+  let m;
+  if((m=tok.match(/^([2-9TJQKA])\1\+$/))){for(let k=ix(m[1]);k>=0;k--)out.push(R[k]+R[k]);return out}
+  if((m=tok.match(/^([2-9TJQKA])\1-([2-9TJQKA])\2$/))){let a=ix(m[1]),b=ix(m[2]);if(a>b)[a,b]=[b,a];for(let k=a;k<=b;k++)out.push(R[k]+R[k]);return out}
+  if((m=tok.match(/^([2-9TJQKA])\1$/)))return[tok];
+  if((m=tok.match(/^([2-9TJQKA])([2-9TJQKA])([so])\+$/))){const hi=ix(m[1]);for(let k=ix(m[2]);k>hi;k--)out.push(m[1]+R[k]+m[3]);return out}
+  if((m=tok.match(/^([2-9TJQKA])([2-9TJQKA])([so])-\1([2-9TJQKA])\3$/))){let a=ix(m[2]),b=ix(m[4]);if(a>b)[a,b]=[b,a];for(let k=a;k<=b;k++)out.push(m[1]+R[k]+m[3]);return out}
+  if((m=tok.match(/^([2-9TJQKA])([2-9TJQKA])([so])$/)))return[tok];
+  if((m=tok.match(/^([2-9TJQKA])([2-9TJQKA])$/)))return[tok+'s',tok+'o'];
+  console.warn('bad range token',tok);return[];
+}
+const parseRange=str=>new Set(str.split(',').flatMap(expand));
+const RANGE_SPOTS=[
+  {id:'utg',t:'UTG: открытие (6-max, 100bb)',d:'Нарисуй руки, которыми открываешься с UTG. Самая тайтовая позиция: впереди пять игроков.',core:'66+,A9s+,A5s,KTs+,QTs+,JTs,AJo+,KQo',border:'22-55,A2s-A8s,K9s,Q9s,J9s,T9s,98s,87s,76s,65s,ATo,KJo',tip:'Рука из первой позиции должна выдерживать 3-бет и игру без позиции. Мелкие одномастные тузы A2s–A5s хороши как блокеры и для блефовых 4-бетов. Разномастные бродвеи ниже AJo/KQo проигрывают доминирующим рукам.'},
+  {id:'co',t:'CO: открытие (6-max, 100bb)',d:'Позади только BTN и блайнды. Диапазон заметно шире.',core:'44+,A2s+,K9s+,Q9s+,J9s+,T9s,98s,ATo+,KJo+,QJo',border:'22,33,K6s-K8s,Q8s,J8s,T8s,87s,76s,65s,54s,A8o,A9o,KTo,QTo,JTo',tip:'Все одномастные тузы входят в диапазон. Разномастные A8o–A9o, KTo и QTo пограничны: при тайтовом BTN и пассивных блайндах открывай их, против агрессивного 3-бетящего BTN выкидывай.'},
+  {id:'btn',t:'BTN: открытие (6-max, 100bb)',d:'Лучшая позиция за столом. Рисуй с поправкой на обычные (не экстремальные) блайнды.',core:'22+,A2s+,K5s+,Q8s+,J8s+,T8s+,97s+,87s,76s,65s,A7o+,A5o,KTo+,QTo+,JTo',border:'K2s-K4s,Q4s-Q7s,J6s,J7s,T6s,T7s,96s,86s,75s,64s,54s,43s,A2o-A4o,A6o,K8o,K9o,Q9o,J9o,T9o,98o',tip:'С BTN открывается 40–50% рук. Главная ошибка — открывать мусор вроде K4o и Q6o, который ничего не делает на постфлопе. Вторая ошибка — выкидывать одномастные коннекторы и любые пары.'},
+  {id:'bb3b',t:'BB: 3-бет против BTN-открытия 2.5bb',d:'Ты на BB, BTN открылся. Нарисуй руки, которые идут в 3-бет (не в колл).',core:'QQ+,AKs,AKo,A5s,A4s',border:'JJ,TT,99,AQs,AJs,ATs,AQo,AJo,KQs,KJs,KTs,QJs,A3s,A2s,K9s,Q9s,J9s,T9s,98s,87s,76s,65s,KQo,K5s,K6s,K7s,K8s',tip:'Против широкого BTN 3-бет из BB строится линейно-поляризованным: сильнейшие руки на вэлью плюс блокерные A5s–A4s и часть играбельных одномастных. Средние пары и одномастные бродвеи обычно играют и в колл, и в 3-бет, поэтому они пограничные.'},
+  {id:'4bet',t:'Регуляр CO: 4-бет против твоего 3-бета с BTN',d:'Типичный регуляр открылся с CO, ты сделал 3-бет с BTN, он поставил 4-бет (100bb). Нарисуй его диапазон 4-бета.',core:'KK+,AKs',border:'QQ,JJ,AKo,AQs,A5s,A4s,A3s,KQs',tip:'4-бет без позиции против BTN строится узко: вэлью QQ+/AK и немного блефов с блокером туза. Если у оппонента 4-бет больше 8–9%, он блефует слишком много: пушь шире. Если меньше 3%, это почти только QQ+/AK: выкидывай даже JJ и AQs.'},
+  {id:'sbbb',t:'SB: открытие против BB (100bb, рейз-или-фолд)',d:'Все сфолдили до тебя на SB. Стратегия без лимпов: рейз или фолд.',core:'22+,A2s+,K2s+,Q5s+,J7s+,T7s+,97s+,86s+,76s,65s,A5o+,K9o+,Q9o+,J9o+,T9o',border:'Q2s-Q4s,J4s-J6s,T5s,T6s,95s,96s,85s,75s,64s,54s,53s,43s,A2o-A4o,K5o-K8o,Q8o,J8o,T8o,98o,87o',tip:'Против одного игрока SB открывается широко, около 45–55%, но хуже BTN: ты будешь без позиции весь постфлоп. Против BB, который много 3-бетит, сужай диапазон до ~35% и убирай слабые разномастные руки.'},
+];
+const RG={spot:RANGE_SPOTS[0].id,sel:new Set(),checked:false,painting:null};
+function rangeSpot(){return RANGE_SPOTS.find(s=>s.id===RG.spot)}
+function scoreRange(spot,sel){
+  const core=parseRange(spot.core),border=parseRange(spot.border);
+  let hit=0,coreTot=0,extra=0,missed=0,selC=0;
+  for(let i=0;i<13;i++)for(let j=0;j<13;j++){const h=handAt(i,j),c=combos(h),inSel=sel.has(h);
+    if(inSel)selC+=c;
+    if(core.has(h)){coreTot+=c;if(inSel)hit+=c;else missed+=c}
+    else if(!border.has(h)&&inSel)extra+=c;}
+  const score=Math.max(0,(hit-extra)/(coreTot+0.0001));
+  return{score:clamp(score,0,1),hit,coreTot,extra,missed,selC,core,border};
+}
+function renderRanges(){
+  const sp=rangeSpot();let selC=0;RG.sel.forEach(h=>selC+=combos(h));
+  let res=null;if(RG.checked)res=scoreRange(sp,RG.sel);
+  const cell=(i,j)=>{const h=handAt(i,j);const on=RG.sel.has(h);let cls=i===j?'pair':'';
+    if(res){const inC=res.core.has(h),inB=res.border.has(h);cls+=on?(inC?' ok':inB?' border-in':' extra'):(inC?' miss':inB?' border-out':'')}
+    else if(on)cls+=' on';
+    return `<div class="${cls}" data-h="${h}">${h.length===2?h:h.slice(0,2)+(h[2]==='s'?'s':'')}</div>`};
+  let grid='';for(let i=0;i<13;i++)for(let j=0;j<13;j++)grid+=cell(i,j);
+  const best=S.rangeBest[sp.id];
+  return `<div class="hero"><span class="eyebrow">Диапазоны руками</span><h1>Нарисуй диапазон из головы</h1><p>Сильные игроки думают не руками, а диапазонами. Чтобы читать чужие диапазоны, нужно на автомате знать свои. Закрашивай клетки (зажми и веди), затем сверься с эталоном. Пограничные руки засчитываются в обе стороны.</p></div>
+    <div class="seg">${RANGE_SPOTS.map(s=>`<button aria-pressed="${s.id===RG.spot}" data-act="rg-spot" data-id="${s.id}">${esc(s.t.split(':')[0])}${S.rangeBest[s.id]!=null?` · ${pct(S.rangeBest[s.id])}%`:''}</button>`).join('')}</div>
+    <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))">
+      <div class="panel stack">
+        <div class="stack-s"><h2>${esc(sp.t)}</h2><p class="muted">${esc(sp.d)}</p></div>
+        <div class="rg-wrap"><div class="rg" id="rg">${grid}</div></div>
+        <div class="row" style="justify-content:space-between"><span class="mono">${selC} комбо · ${(selC/1326*100).toFixed(1)}% рук</span><span class="row"><button class="btn small" data-act="rg-clear">Очистить</button>${RG.checked?`<button class="btn small" data-act="rg-retry">Ещё раз</button>`:`<button class="btn primary small" data-act="rg-check">Проверить</button>`}</span></div>
+      </div>
+      <div class="stack">
+        ${res?`<div class="panel stack-s"><span class="eyebrow">Результат</span><div class="row" style="align-items:flex-end;gap:12px"><span class="big-num">${pct(res.score)}%</span><span class="muted" style="padding-bottom:8px">лучший: ${best!=null?pct(best)+'%':'—'}</span></div>
+          <p class="muted" style="font-size:14px">Попал в ядро: ${res.hit} из ${res.coreTot} комбо. Пропущено: ${res.missed}. Лишнего: ${res.extra} комбо (минус к баллу).</p>
+          <div class="legend"><span><i style="background:var(--good)"></i>верно</span><span><i style="background:var(--warn)"></i>пограничная, ок</span><span><i style="background:var(--bad)"></i>лишняя</span><span><i style="box-shadow:inset 0 0 0 2px var(--info)"></i>пропущена</span><span><i style="box-shadow:inset 0 0 0 1.5px var(--warn)"></i>пограничная, можно было</span></div></div>
+          <div class="why">${esc(sp.tip)}</div>`:`<div class="panel stack-s"><h3>Как думать</h3><p class="muted" style="font-size:14px">Начни с ядра: пары, одномастные тузы, бродвеи. Потом спроси себя про каждую пограничную группу: что эта рука делает на постфлопе в этой позиции? Не подглядывай в чарты: цель — проверить, что живёт у тебя в голове.</p></div>`}
+        <div class="panel stack-s"><h3>Почему это важно</h3><p class="muted" style="font-size:14px">Эталоны — упрощённые солверные стратегии для онлайн-кэша 100bb с обычным рейком. Твой реальный диапазон должен сдвигаться под стол: тайтовые блайнды — шире, агрессивные 3-бетторы — уже. Но сдвигать можно только то, что знаешь.</p></div>
+      </div>
+    </div>`;
+}
+ACTS['rg-spot']=(el)=>{RG.spot=el.dataset.id;RG.sel=new Set();RG.checked=false;render()};
+ACTS['rg-clear']=()=>{RG.sel=new Set();RG.checked=false;render()};
+ACTS['rg-retry']=()=>{RG.sel=new Set();RG.checked=false;render()};
+ACTS['rg-check']=()=>{const sp=rangeSpot();const r=scoreRange(sp,RG.sel);RG.checked=true;
+  if(S.rangeBest[sp.id]==null||r.score>S.rangeBest[sp.id])S.rangeBest[sp.id]=r.score;
+  logEvent('range','ranges',Math.round(r.score*10),10,{spot:sp.id});save();render()};
+function paintCell(el){if(RG.checked||!el||!el.dataset.h)return;const h=el.dataset.h;if(RG.painting==='add'){RG.sel.add(h);el.className=(el.className.includes('pair')?'pair ':'')+'on'}else{RG.sel.delete(h);el.className=el.className.includes('pair')?'pair':''}}
+document.addEventListener('pointerdown',e=>{const el=e.target.closest('#rg div');if(!el||RG.checked)return;e.preventDefault();RG.painting=RG.sel.has(el.dataset.h)?'del':'add';paintCell(el)});
+document.addEventListener('pointermove',e=>{if(!RG.painting)return;const el=document.elementFromPoint(e.clientX,e.clientY);if(el&&el.closest('#rg'))paintCell(el.closest('#rg div'))});
+document.addEventListener('pointerup',()=>{if(RG.painting){RG.painting=null;render()}});
+document.addEventListener('pointercancel',()=>{if(RG.painting){RG.painting=null;render()}});
+
+/* ============================== SPEED MATH ============================== */
+const SP={phase:'intro',qs:[],i:0,c:0,sel:null,left:0,ms:[],res:[]};
+const SPEED_SEC=12;
+const r1=x=>Math.round(x*100);
+function numOpts(correct,cands,fmt){
+  const seen=new Set([fmt(correct)]);const opts=[correct];
+  for(const c of cands){const f=fmt(c);if(c>0&&!seen.has(f)){seen.add(f);opts.push(c)}if(opts.length===4)break}
+  let k=1;while(opts.length<4){const c=correct*(1+.18*k*(k%2?1:-1));const f=fmt(c);if(c>0&&!seen.has(f)){seen.add(f);opts.push(c)}k++}
+  const sh=shuffle(opts);return{opts:sh.map(fmt),ans:sh.indexOf(correct)};
+}
+const P=x=>r1(x)+'%';
+const FRACS=[[.25,'25%'],[1/3,'33%'],[.5,'50%'],[2/3,'66%'],[.75,'75%'],[1,'100%'],[1.5,'150%'],[2,'200%']];
+function genMath(){
+  const t=pick(['potodds','potodds','mdf','alpha','bluff','outs2','outs1','combo','combo','pairs']);
+  const pot=pick([6,8,10,12,15,20,24,30,40,50,60,80,100]);
+  if(t==='potodds'){const [f]=pick(FRACS);const b=Math.round(pot*f*10)/10;const eq=b/(pot+2*b);
+    const o=numOpts(eq,[b/(pot+b),pot/(pot+2*b),b/pot*.5],P);return{q:`Банк ${pot} bb. Оппонент ставит ${b} bb. Какое минимальное эквити нужно для окупаемого колла (без учёта будущих улиц)?`,...o,why:`Колл ${b} в банк ${pot}+${b}+${b}=${pot+2*b}. Эквити = колл / итоговый банк = ${b}/${pot+2*b} ≈ ${P(eq)}. Частая ошибка — делить на банк без своего колла.`,tag:'шансы банка'}}
+  if(t==='mdf'){const [f,fl]=pick(FRACS);const mdf=1/(1+f);const o=numOpts(mdf,[1-1/(1+2*f),f/(1+f),1-mdf+.05],P);
+    return{q:`Оппонент ставит ${fl} банка. Какая минимальная частота защиты (MDF) не даёт ему авто-профита любыми двумя картами?`,...o,why:`MDF = банк / (банк + ставка) = 1 / (1 + ${f.toFixed(2)}) ≈ ${P(mdf)}. Это ориентир, а не закон: против игрока, который недоблефовывает, защищайся меньше.`,tag:'MDF'}}
+  if(t==='alpha'){const [f,fl]=pick(FRACS);const a=f/(1+f);const o=numOpts(a,[f/(1+2*f),1/(1+f),a+.1],P);
+    return{q:`Ты блефуешь ставкой ${fl} банка с рукой, у которой нет эквити. Как часто оппонент должен фолдить, чтобы блеф был в нуле?`,...o,why:`Нужная фолд-эквити = ставка / (банк + ставка) = ${f.toFixed(2)}/${(1+f).toFixed(2)} ≈ ${P(a)}. Чем больше ставка, тем чаще должен фолдить оппонент.`,tag:'фолд-эквити'}}
+  if(t==='bluff'){const [f,fl]=pick(FRACS);const bl=f/(1+2*f);const o=numOpts(bl,[f/(1+f),1/(1+f),bl*1.5],P);
+    return{q:`Ривер, поляризованный диапазон, ставка ${fl} банка. Какая доля блефов в диапазоне ставки делает оппонента безразличным между коллом и фолдом?`,...o,why:`Доля блефов = шансы, которые получает коллер = ставка / (банк + 2·ставка) ≈ ${P(bl)}. При ставке в банк это 1 блеф на 2 вэлью-комбо. Больше блефов — оппонент коллирует, меньше — фолдит.`,tag:'баланс блефа'}}
+  if(t==='outs2'){const n=pick([4,5,6,8,9,10,12,15]);const eq=1-((47-n)*(46-n))/(47*46);const o=numOpts(eq,[n/47,n*2/100,n*4/100+.06,eq*.6],P);
+    return{q:`Флоп, ты олл-ин и оппонент уже с готовой рукой. У тебя ${n} чистых аутов. Какое примерно эквити до ривера (две карты)?`,...o,why:`Точно: 1 − (${47-n}/47)·(${46-n}/46) ≈ ${P(eq)}. Правило ×4 даёт ${n*4}%: на 8+ аутах оно завышает, правило «×4 − (ауты − 8)» точнее.`,tag:'ауты'}}
+  if(t==='outs1'){const n=pick([4,6,8,9,10,12,15]);const eq=n/46;const o=numOpts(eq,[n/52,n*4/100,eq*1.4],P);
+    return{q:`Тёрн. У тебя ${n} аутов против готовой руки. Какова вероятность прикупить на ривере?`,...o,why:`${n} аутов из 46 неизвестных карт = ${P(eq)}. Правило ×2 даёт ${n*2}% и слегка занижает.`,tag:'ауты'}}
+  if(t==='combo'){const hs=pick([['A','K'],['A','Q'],['K','Q'],['A','J'],['Q','J'],['K','J']]);const [x,y]=hs;const onBoard=pick([0,1]);const heroHas=pick([0,1]);
+    let nx=4-onBoard,ny=4-heroHas;const corr=nx*ny;const desc=`${onBoard?`На борде одна ${x}. `:''}${heroHas?`У тебя на руках ${y}. `:''}`;
+    const o=numOpts(corr,[16,12,9,8,6,4,3].filter(v=>v!==corr),v=>String(Math.round(v)));
+    return{q:`${desc}Сколько всего комбинаций ${x}${y} (одномастных + разномастных) может быть у оппонента?`,...o,why:`Карт ${x} осталось ${nx}, карт ${y} осталось ${ny}: ${nx}×${ny} = ${corr} комбо. Без блокеров у неспаренной руки 16 комбо (4 одномастных + 12 разномастных).`,tag:'комбинаторика'}}
+  {const r=pick(['A','K','Q','J','T','9']);const seen=pick([0,1,2]);const left=4-seen;const corr=left*(left-1)/2;const desc=seen===1?`На борде одна карта ${r}. `:seen===2?`На борде две карты ${r} (борд спарен). `:'';
+    const o=numOpts(corr,[6,3,1,4,2,12].filter(v=>v!==corr),v=>String(Math.round(v)));
+    return{q:`${desc}Сколько комбинаций пары ${r}${r} возможно у оппонента?`,...o,why:`Осталось ${left} карт ${r}; число пар = C(${left},2) = ${corr}. Поэтому сет на флопе — всего 3 комбо, а оверпара без блокеров — 6.`,tag:'комбинаторика'}}
+}
+function renderSpeed(){
+  if(SP.phase==='intro'){const b=S.mathBest;
+    return `<div class="hero"><span class="eyebrow">Счёт на скорость</span><h1>Математика как рефлекс</h1><p>За столом нет времени на расчёты. 15 задач, ${SPEED_SEC} секунд на каждую: шансы банка, MDF, фолд-эквити, баланс блефов, ауты, комбинаторика. Задачи генерируются заново каждый раз. Цель: 90%+ при среднем времени до 6 секунд.</p></div>
+      <div class="grid3"><div class="panel tight stat"><span class="v">${b?b.c+'/15':'—'}</span><span class="l">лучший результат</span></div><div class="panel tight stat"><span class="v">${b?(b.avg/1000).toFixed(1)+' с':'—'}</span><span class="l">среднее время в лучшем</span></div><div class="panel tight stat"><span class="v">${S.log.filter(e=>e.kind==='speed').length}</span><span class="l">пройдено разминок</span></div></div>
+      <div class="row"><button class="btn primary" data-act="sp-start">Старт</button></div>
+      <div class="panel stack-s"><h3>Шпаргалка, которую надо выучить</h3>
+      <div class="scroll-x"><table class="mini"><thead><tr><th>Ставка (от банка)</th><th>Нужно эквити для колла</th><th>MDF</th><th>Нужно фолдов для блефа</th></tr></thead><tbody>
+      ${FRACS.map(([f,l])=>`<tr><td>${l}</td><td class="mono">${P(f/(1+2*f))}</td><td class="mono">${P(1/(1+f))}</td><td class="mono">${P(f/(1+f))}</td></tr>`).join('')}</tbody></table></div></div>`}
+  if(SP.phase==='q'){const q=SP.qs[SP.i];const ans=SP.sel!=null;
+    return `<div class="row" style="justify-content:space-between"><span class="eyebrow">Задача ${SP.i+1} из ${SP.qs.length}</span><span class="mono" id="sp-left">${ans?'':Math.ceil(SP.left)+' с'}</span></div>
+      <div class="progress timer ${SP.left<4?'low':''}" id="sp-bar"><i style="width:${ans?0:SP.left/SPEED_SEC*100}%"></i></div>
+      <div class="panel stack"><p class="q-text">${tx(q.q)}</p>
+        <div class="opts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr))">${q.opts.map((o,i)=>{let c='';if(ans){if(i===q.ans)c='right';else if(i===SP.sel)c='wrong'}return `<button class="opt ${c}" data-act="sp-ans" data-i="${i}" ${ans?'disabled':''}><span class="k">${'ABCD'[i]}</span><span class="mono">${esc(o)}</span></button>`}).join('')}</div>
+        ${ans?`<div class="why ${SP.sel===q.ans?'good':'bad'}">${SP.sel===-1?'<b>Время вышло.</b> ':''}${tx(q.why)}</div><div class="row"><button class="btn primary" data-act="sp-next">${SP.i===SP.qs.length-1?'Итоги':'Дальше'}</button></div>`:''}
+      </div>`}
+  const avg=SP.ms.length?SP.ms.reduce((a,b)=>a+b,0)/SP.ms.length:0;
+  return `<div class="hero"><span class="eyebrow">Разминка завершена</span><div class="row" style="align-items:flex-end;gap:18px"><span class="big-num">${SP.c}/${SP.qs.length}</span><span class="muted" style="padding-bottom:8px">среднее время ${(avg/1000).toFixed(1)} с · ${SP.c>=14&&avg<6000?'уровень автомата':SP.c>=12?'хорошо, дожимай скорость':'повтори шпаргалку и попробуй снова'}</span></div></div>
+    <div class="row"><button class="btn primary" data-act="sp-start">Ещё раз</button><button class="btn" data-go="home">В штаб</button></div>
+    <div class="panel stack-s"><h3>По типам задач</h3>${barsHTML(Object.entries(SP.res.reduce((m,r)=>{const b=m[r.tag]||(m[r.tag]={c:0,t:0});b.t++;if(r.ok)b.c++;return m},{})).map(([k,b])=>({l:k,v:b.c/b.t})))}</div>`;
+}
+function spTick(){
+  if(SP.phase!=='q'||SP.sel!=null)return;
+  SP.left-=.1;const bar=$('#sp-bar'),lab=$('#sp-left');
+  if(bar){bar.firstElementChild.style.width=Math.max(0,SP.left/SPEED_SEC*100)+'%';bar.classList.toggle('low',SP.left<4)}
+  if(lab)lab.textContent=Math.max(0,Math.ceil(SP.left))+' с';
+  if(SP.left<=0)spAnswer(-1);
+}
+function spStartTimer(){stopTimers();SP.left=SPEED_SEC;SP.t0=Date.now();timers.push(setInterval(spTick,100))}
+function spAnswer(i){const q=SP.qs[SP.i];SP.sel=i;const ok=i===q.ans;if(ok)SP.c++;SP.ms.push(i===-1?SPEED_SEC*1000:Date.now()-SP.t0);SP.res.push({tag:q.tag,ok});stopTimers();
+  const st=S.stats.math||(S.stats.math={c:0,t:0});st.t++;if(ok)st.c++;render()}
+ACTS['sp-start']=()=>{SP.qs=Array.from({length:15},genMath);SP.i=0;SP.c=0;SP.sel=null;SP.ms=[];SP.res=[];SP.phase='q';render();spStartTimer()};
+ACTS['sp-ans']=(el)=>{if(SP.sel!=null)return;spAnswer(+el.dataset.i)};
+ACTS['sp-next']=()=>{SP.i++;SP.sel=null;if(SP.i>=SP.qs.length){SP.phase='done';const avg=SP.ms.reduce((a,b)=>a+b,0)/SP.ms.length;
+  const b=S.mathBest;if(!b||SP.c>b.c||(SP.c===b.c&&avg<b.avg))S.mathBest={c:SP.c,avg,d:today()};logEvent('speed','math',SP.c,SP.qs.length,{avg});save();render()}else{render();spStartTimer()}};
+
+/* ============================== AI COACH ============================== */
+const COACH_RULES=`Ты — элитный тренер по безлимитному холдему: опыт high-stakes регуляра плюс годы тренерской работы. Отвечаешь по-русски, покерным сленгом русскоязычных регуляров (c-bet, чек-рейз, блефкэтчер, натсы, MDF, SPR). Учишь процессу мышления, а не ответам: диапазоны вместо рук, частоты вместо «всегда/никогда», конкретные эксплойты против конкретных профилей. Говоришь прямо, без воды и без морализаторства. Если данных не хватает, называешь допущение и идёшь дальше.`;
+function profileBrief(){
+  const p=S.profile||{};const parts=[];
+  if(Object.values(p).some(Boolean))parts.push('Анкета ученика: '+PROFILE_Q.map(q=>p[q.k]?q.l+' — '+p[q.k]:null).filter(Boolean).join('; ')+'.');
+  const sc=AXES.map(a=>{const v=axisScore(a.id);return v==null?null:a.name+' '+pct(v)+'%'}).filter(Boolean);
+  if(sc.length)parts.push('Оценки по осям мастерства (диагностика + тренажёр): '+sc.join(', ')+'.');
+  const ar=archetype();if(ar)parts.push('Тип: '+ar.n+'. '+(ar.cal||''));
+  if(S.tilt&&S.tilt.top)parts.push('Главные типы тилта по самооценке: '+S.tilt.top.join(', ')+'.');
+  const j=S.journal.slice(-5);if(j.length)parts.push('Последние сессии: '+j.map(x=>`${x.d}: A-game ${x.a}%, макс. тилт ${x.tilt}/10${x.trig&&x.trig.length?', триггеры: '+x.trig.join('/'):''}`).join('; ')+'.');
+  return parts.join('\n')||'Данных об ученике пока нет.';
+}
+function sampleErr(e){const c=e&&e.code;
+  if(c==='not_granted'||c==='sampling_disabled'||c==='not_declared'||c==='capability_disabled'||c==='capability_removed'){sampleFn=null;return 'AI-тренер недоступен в этом просмотре: доступ к Claude не разрешён.'}
+  if(c==='rate_limited')return 'Слишком много запросов подряд или исчерпан лимит. Попробуй через несколько минут.';
+  if(c==='cancelled')return 'Остановлено.';
+  if(c==='refused')return 'Claude отказался отвечать на этот запрос. Переформулируй его.';
+  if(c==='invalid_json')return 'Тренер ответил в неправильном формате. Нажми ещё раз.';
+  if(c==='session_expired')return 'Сессия истекла. Войди в Claude заново.';
+  return 'Связь с тренером прервалась. Попробуй ещё раз.'}
+const AI={chat:[],ctl:null,review:'',reviewOut:'',genStatus:''};
+const HAND_EXAMPLE=`NL50 6-max, 100bb эфф.
+Hero BTN с K♠Q♠. CO (регуляр, 24/20, 3-бет 7%) открывается 2.5bb, Hero 3-бет 8bb, CO колл.
+Флоп (16.5bb): Q♥ 8♣ 3♦. CO чек, Hero ставит 5.5, CO чек-рейз до 17.
+Тёрн (50.5bb): 2♣. CO ставит 26. Hero ?
+Что я думал: у него много QJ/AQ/88/33, но и блефы с дро. Я сфолдил.`;
+function renderAI(){
+  if(!sampleFn)return `<div class="hero"><span class="eyebrow">AI-тренер</span><h1>Разбор твоих раздач</h1><p>Здесь тренер разбирает твои раздачи по улицам, отвечает на вопросы и генерирует новые споты под твои слабые места.</p></div>
+    <div class="panel stack-s"><h3>Сейчас AI-тренер не подключён</h3><p class="muted">Он работает, когда страница открыта в Claude под твоим аккаунтом и ты разрешишь ей обращаться к Claude. Остальные разделы работают без него.</p></div>`;
+  const weak=weakestAxes();
+  return `<div class="hero"><span class="eyebrow">AI-тренер</span><h1>Разбор раздач и вопросы тренеру</h1><p>Тренер видит твой профиль: оси мастерства, тип игрока, тилт-профиль и последние сессии. Разбор строится вокруг твоих слабых мест. Запросы расходуют лимит твоего аккаунта Claude.</p></div>
+    <div class="panel stack"><div class="stack-s"><span class="eyebrow">Разбор раздачи</span><h2>Вставь раздачу из своей сессии</h2><p class="muted" style="font-size:14px">Позиции, стеки, сайзинги, что знаешь об оппоненте и <b>что ты думал в моменте</b>. Последнее важнее всего: тренер разбирает мышление, а не только действие.</p></div>
+      <div class="field"><label for="ai-hand">Раздача</label><textarea id="ai-hand" rows="8" placeholder="${esc(HAND_EXAMPLE)}">${esc(AI.review)}</textarea></div>
+      <div class="row"><button class="btn primary" data-act="ai-review">Разобрать</button><button class="btn small" data-act="ai-example">Подставить пример</button><button class="btn small" data-act="ai-stop" ${AI.ctl?'':'disabled'}>Стоп</button></div>
+      <div id="ai-review-out" class="ai-out">${AI.reviewOut?esc(AI.reviewOut):''}</div>
+    </div>
+    <div class="panel stack"><div class="stack-s"><span class="eyebrow">Генератор спотов</span><h2>Новые задачи под твои дыры</h2><p class="muted" style="font-size:14px">Тренер составит 4 новых спота по выбранной оси. Они попадут в тренажёр и в интервальное повторение.</p></div>
+      <div class="seg">${AXES.map(a=>`<button data-act="ai-gen" data-cat="${a.id}" aria-pressed="false">${esc(a.name)}${a.id===weak[0].id?' · слабее всего':''}</button>`).join('')}</div>
+      <p class="muted" id="ai-gen-status" style="font-size:14px">${esc(AI.genStatus)}</p>
+      ${S.aiQs.length?`<p class="faint" style="font-size:13px">Сгенерировано спотов: ${S.aiQs.length}. <button class="link" data-act="t-start" data-cat="smart">Тренировать</button></p>`:''}
+    </div>
+    <div class="panel stack"><div class="stack-s"><span class="eyebrow">Вопрос тренеру</span><h2>Спроси что угодно</h2></div>
+      <div class="chat" id="chat">${AI.chat.map(m=>`<div class="msg ${m.role==='user'?'me':'ai'}">${esc(m.content)}</div>`).join('')}</div>
+      <div class="field"><label for="ai-q">Сообщение</label><textarea id="ai-q" rows="3" placeholder="Например: как мне играть против рега, который чек-рейзит каждый мой c-bet на сухих досках?"></textarea></div>
+      <div class="row"><button class="btn primary" data-act="ai-send">Отправить</button>${AI.chat.length?`<button class="btn small" data-act="ai-clear">Новый разговор</button>`:''}</div>
+    </div>`;
+}
+ACTS['ai-example']=()=>{const t=$('#ai-hand');if(t)t.value=HAND_EXAMPLE};
+ACTS['ai-stop']=()=>{AI.ctl&&AI.ctl.abort()};
+ACTS['ai-review']=async(el)=>{
+  const hand=($('#ai-hand')||{}).value||'';if(hand.trim().length<20){toast('Опиши раздачу подробнее');return}
+  AI.review=hand;AI.ctl=new AbortController();busy=true;el.disabled=true;$('[data-act="ai-stop"]').disabled=false;
+  const out=$('#ai-review-out');out.textContent='Тренер думает над раздачей… (обычно 20–60 секунд)';
+  const prompt=`${COACH_RULES}\n\nПРОФИЛЬ УЧЕНИКА\n${profileBrief()}\n\nРАЗДАЧА УЧЕНИКА\n${hand.slice(0,6000)}\n\nСделай тренерский разбор строго в такой структуре, простым текстом без markdown-разметки (заголовки — отдельной строкой ЗАГЛАВНЫМИ буквами):\nВЕРДИКТ — 2 предложения: главная ошибка или подтверждение, что сыграно хорошо.\nПО УЛИЦАМ — для каждой улицы: диапазон героя, диапазон оппонента (с учётом его профиля), лучшее действие и сайзинг, почему.\nМЫШЛЕНИЕ — разбери то, что ученик думал в моменте: где логика верна, где ошибка процесса (например, думал о конкретной руке, а не о диапазоне; игнорировал профиль; result-oriented).\nСВЯЗЬ С ПРОФИЛЕМ — как эта раздача связана с его слабыми осями.\nЗАДАНИЕ — одно конкретное упражнение на неделю.\nВОПРОСЫ — два сократических вопроса, которые ученик должен задать себе в похожем споте.\nОбъём до 450 слов.`;
+  try{await sampleFn(prompt,{modelTier:'complex',signal:AI.ctl.signal,cache:false,onText:({text})=>{out.textContent=text;AI.reviewOut=text}});logEvent('review','ai',0,0)}
+  catch(e){if(e&&e.text){out.textContent=e.text+'\n\n['+sampleErr(e)+']';AI.reviewOut=out.textContent}else{out.textContent=sampleErr(e)}}
+  AI.ctl=null;busy=false;el.disabled=false;const st=$('[data-act="ai-stop"]');if(st)st.disabled=true;save();
+};
+ACTS['ai-send']=async(el)=>{
+  const ta=$('#ai-q');const txt=(ta&&ta.value||'').trim();if(!txt)return;
+  AI.chat.push({role:'user',content:txt});ta.value='';busy=true;el.disabled=true;
+  const chat=$('#chat');chat.insertAdjacentHTML('beforeend',`<div class="msg me">${esc(txt)}</div><div class="msg ai" id="ai-live">Тренер думает…</div>`);
+  const live=$('#ai-live');
+  const turns=[{role:'user',content:`${COACH_RULES}\n\nПРОФИЛЬ УЧЕНИКА\n${profileBrief()}\n\nОтвечай кратко и по делу, до 250 слов, простым текстом без markdown. Дальше — разговор с учеником.`},...AI.chat.slice(-12)];
+  AI.ctl=new AbortController();
+  try{const {text}=await sampleFn(turns,{cache:false,signal:AI.ctl.signal,onText:({text})=>{live.textContent=text}});AI.chat.push({role:'assistant',content:text})}
+  catch(e){live.textContent=(e&&e.text?e.text+'\n\n':'')+'['+sampleErr(e)+']';AI.chat.pop()}
+  live.removeAttribute('id');AI.ctl=null;busy=false;el.disabled=false;
+};
+ACTS['ai-clear']=()=>{AI.chat=[];render()};
+ACTS['ai-gen-from']=(el)=>{go('ai');setTimeout(()=>{const b=document.querySelector(`[data-act="ai-gen"][data-cat="${el.dataset.cat}"]`);b&&b.click()},50)};
+ACTS['ai-gen']=async(el)=>{
+  const cat=el.dataset.cat;const st=$('#ai-gen-status');document.querySelectorAll('[data-act="ai-gen"]').forEach(b=>b.disabled=true);
+  st.textContent=`Тренер составляет споты: ${AXIS[cat].name}… (до минуты)`;busy=true;
+  const wrongTags=Object.entries(S.srs).filter(([id,r])=>r.wrong).map(([id])=>qById(id)).filter(q=>q&&q.cat===cat).map(q=>q.tag).filter(Boolean);
+  const examples=BANK.filter(q=>q.cat===cat).slice(0,2).map(q=>JSON.stringify(q)).join('\n');
+  const prompt=`${COACH_RULES}\n\nПРОФИЛЬ УЧЕНИКА\n${profileBrief()}\n${wrongTags.length?'Навыки, на которых ученик ошибался: '+[...new Set(wrongTags)].slice(0,8).join(', ')+'.':''}\n\nСоставь 4 НОВЫХ тренировочных спота по оси «${AXIS[cat].name}» (${AXIS[cat].desc}). Уровень: средний и продвинутый, под этого ученика. Только споты, где лучший ответ однозначно защищается солверной логикой или ясным эксплойтом (тогда опиши профиль оппонента). Математику проверь дважды. Правильный ответ ставь на разные позиции.\n\nОтветь ТОЛЬКО JSON-массивом из 4 объектов такой формы (тексты на русском):\n{"level":2,"pos":"BTN vs BB","hero":"As Kd","board":"Kh 7c 2d","pot":12.5,"stack":87.5,"q":"ситуация и вопрос","opts":["...","...","...","..."],"ans":1,"why":"разбор процесса мышления, 3-5 предложений","tag":"короткий навык"}\nКарты в формате ранг+масть (s,h,d,c), ранги 2-9,T,J,Q,K,A; пустая строка, если не нужно. pot и stack в bb или null.\nПримеры формата:\n${examples}`;
+  try{
+    const arr=await sampleFn.json(prompt,{modelTier:'complex',cache:false});
+    const ok=(Array.isArray(arr)?arr:[]).map((x,i)=>validQ(x,cat,i)).filter(Boolean);
+    if(!ok.length)throw{code:'invalid_json'};
+    S.aiQs=S.aiQs.concat(ok);save();AI.genStatus=`Готово: ${ok.length} новых спота по оси «${AXIS[cat].name}».`;st.innerHTML=`${esc(AI.genStatus)} <button class="link" data-act="t-start-ai" data-cat="${cat}">Решать сейчас</button>`;
+  }catch(e){st.textContent=sampleErr(e)}
+  busy=false;document.querySelectorAll('[data-act="ai-gen"]').forEach(b=>b.disabled=false);
+};
+ACTS['t-start-ai']=(el)=>{const cat=el.dataset.cat;const fresh=S.aiQs.filter(q=>q.cat===cat&&!S.srs[q.id]);T.cat=cat;T.session={cat,qs:fresh.length?fresh:S.aiQs.filter(q=>q.cat===cat).slice(-4),i:0,sel:null,done:false,c:0,res:[]};go('train')};
+function validQ(x,cat,i){
+  if(!x||typeof x!=='object')return null;
+  const opts=Array.isArray(x.opts)?x.opts.map(String).filter(Boolean).slice(0,4):[];
+  const ans=Number(x.ans);if(opts.length<2||!Number.isInteger(ans)||ans<0||ans>=opts.length)return null;
+  if(!x.q||!x.why)return null;
+  const cardsOk=s=>typeof s==='string'&&s.trim().split(/\s+/).every(c=>/^[2-9TJQKA][shdc]$/.test(c))?s.trim():'';
+  const num=v=>v==null||v===''||isNaN(+v)?null:+v;
+  return{id:'ai-'+Date.now().toString(36)+'-'+i,cat,ai:true,level:clamp(Number(x.level)||2,1,3),pos:String(x.pos||'').slice(0,40),hero:cardsOk(x.hero),board:cardsOk(x.board),pot:num(x.pot),stack:num(x.stack),q:String(x.q).slice(0,1500),opts:opts.map(o=>o.slice(0,300)),ans,why:String(x.why).slice(0,1500),tag:String(x.tag||'').slice(0,60)};
+}
+
+
+/* ============================== DOSSIER ============================== */
+const ARCH=[
+  {id:'fish',n:'Колл-станция',sub:'loose-passive фиш',st:{VPIP:[35,60],PFR:[3,12],'3B':[1,4],AF:[0.5,1.5],WTSD:[32,45],F2CB:[25,40]},
+   tells:['Лимпы, колды, мин-рейзы, нестандартные сайзинги','Мин-беты и маленькие донки с дро или слабой парой','Снап-коллы, круглые и неполные бай-ины, частые ребаи','На шоудауне любая пара, слабый кикер, доехавший гатшот'],
+   range:'Широкий и не ограниченный сверху. Постфлоп коллирует любой парой и любым дро, а рейзит почти только с силой.',
+   ex:['Вэлью-бет тоньше и крупнее: 66–100% банка, топ-пара на три улицы','Почти не блефуй, особенно на ривере','Изолируй лимпы шире: 4bb + 1bb за каждого лимпера','Не слоуплей: он сам не ставит, его надо «кормить»','Рейз на тёрне или ривере — это вэлью: фолди одну пару','После чек-чек на тёрне ставь на ривере тонко: он коллирует третьей парой']},
+  {id:'maniac',n:'Маньяк',sub:'LAG-кит',st:{VPIP:[40,70],PFR:[25,50],'3B':[12,25],AF:[4,8],WTSD:[28,35],F2CB:[30,45]},
+   tells:['Мгновенные действия, пот-рейзы и овербеты','Показывает блефы, тильтует в чате','Ставит на всех улицах независимо от доски'],
+   range:'Ставки почти не связаны с силой руки, агрессия сильно смещена в воздух и дро.',
+   ex:['Садись слева от него, чтобы иметь позицию','Чек-колл вместо ставки: пусть блефует сам','4-бет на вэлью широко: TT+, AQ+ против 3-бета 20%+','Не блефуй: он не фолдит','Вторая пара и A-high — блефкэтчеры до конца','Держи стоп-лосс: дисперсия огромная']},
+  {id:'nit',n:'Нит',sub:'tight-passive / рок',st:{VPIP:[7,15],PFR:[5,12],'3B':[2,4],AF:[1.2,2.5],WTSD:[19,25],F2CB:[50,65]},
+   tells:['Долго думает, уходит после крупного выигрыша (hit-and-run)','Сидит аут перед своим BB','На шоудауне показывает только премиум'],
+   range:'3-бет — QQ+ и AK. 4-бет — KK+. Рейз постфлоп — сет и сильнее, колл-колл-колл — топ-пара и сильнее.',
+   ex:['Воруй блайнды очень широко: при Fold to Steal 85%+ почти любые две','3-беть его опены шире, а его 3-бет и 4-бет уважай','Флоатуй флоп в позиции и забирай банк на тёрне, если он чекнул','Не плати по его крупным ставкам на тёрне и ривере','Блефы работают, тонкий вэлью — нет']},
+  {id:'weak',n:'Слабо-тайтовый рег',sub:'weak-tight reg',st:{VPIP:[16,20],PFR:[13,17],'3B':[4,6],AF:[1.8,2.8],WTSD:[21,24],F2CB:[55,75]},
+   tells:['Много столов, стандартные сайзинги, автопилот','Сдаётся после флопа, если не попал','На ривере почти не блефует'],
+   range:'Опены по чартам. Блефует только на флопе, на тёрне и ривере в основном вэлью. Рейз ривера — натс.',
+   ex:['3-беть шире, особенно в позиции с Axs и Kxs, на 4-бет фолди','Рейзь и чек-рейзь его маленькие c-bet на сухих досках','Если он заколлировал флоп и чекнул тёрн — ставь','Фолди на его рейзы тёрна и ривера','Тонкий вэлью не работает: коллирует только сильным']},
+  {id:'tag',n:'TAG-рег',sub:'крепкий регуляр',st:{VPIP:[20,25],PFR:[17,22],'3B':[6,9],AF:[2,3],WTSD:[24,28],F2CB:[40,52]},
+   tells:['Сбалансированные сайзинги, ровный тайминг','Мало явных ошибок, нужна выборка'],
+   range:'Близок к чартам. На низких лимитах всё равно недоблефовывает крупные ставки на ривере.',
+   ex:['Найди один перекос (Fold to Probe, c-bet IP 90%+) и бей в него','Фолди блефкэтчеры против крупного ривера и рейзов, особенно в 3-бет потах','Блефуй крупно на ривере с блокерами: пул оверфолдит против овербетов','Избегай конфликтов без позиции','Сначала ищи за столом цели послабее']},
+  {id:'lag',n:'LAG-рег',sub:'агрессивный регуляр',st:{VPIP:[26,33],PFR:[22,28],'3B':[9,14],AF:[3,4],WTSD:[26,30],F2CB:[38,48]},
+   tells:['Ставит 1/3 банка на флопе всем диапазоном','Флоаты, пробы, овербеты'],
+   range:'Широкий и агрессивный, но обоснованный. Слабое место — переизбыток ставок малым сайзингом.',
+   ex:['Чек-рейзь чаще против c-bet 80%+: и вэлью, и дро, и бэкдоры','Коллируй его 3-беты в позиции шире играбельными руками','4-бет блефуй с A5s–A2s при Fold to 4-bet 55%+','Шире ловишь блефы на поздних улицах при высоком AF и низком W$SD','Сильные руки играй прямо']},
+  {id:'fof',n:'Фит-о-фолд',sub:'играет только попадание',st:{VPIP:[20,30],PFR:[8,15],'3B':[2,5],AF:[1,2],WTSD:[17,22],F2CB:[65,80]},
+   tells:['Коллирует флоп только с парой или сильным дро','Если отбил c-bet, почти всегда доходит до вскрытия'],
+   range:'Колл флопа — пара. Рейз флопа — вэлью или сильное дро.',
+   ex:['c-bet часто и маленьким сайзингом всем диапазоном','Ставь, если он чекнул (пробы и стабы)','Если он заколлировал флоп, на бланке с воздухом не стреляй','Сильные руки ставь на всех улицах','Не 3-бети блефом его рейз флопа']},
+  {id:'scared',n:'Испуганные деньги',sub:'scared money',st:{VPIP:[15,25],PFR:[8,15],'3B':[1,4],AF:[0.8,1.6],WTSD:[20,26],F2CB:[50,65]},
+   tells:['Минимальный бай-ин или «последние деньги»','Пересчитывает фишки, вздыхает в крупных банках','После проигрыша зажимается, после выигрыша уходит'],
+   range:'Рейзит только с натсами. Сдаёт средние руки, когда под угрозой весь стек.',
+   ex:['Давить крупно, когда под угрозой весь стек: овербеты и олл-ины на скар-картах','Вэлью ставь мельче, чтобы не спугнуть','Его рейз или пуш — натс','Не путай с грамотным шорт-стекером']},
+  {id:'leveler',n:'Левелер',sub:'fancy-play',st:{VPIP:[25,35],PFR:[18,25],'3B':[10,14],AF:[3,5],WTSD:[30,36],F2CB:[35,45]},
+   tells:['Показывает блефы, рассуждает теорией в чате','Нестандартные линии: чек-рейз ривера, овербет-блефы','Хиро-коллы с A-high'],
+   range:'Высокий WTSD и низкий W$SD: много коллов «по чтению».',
+   ex:['Играй прямо, с упором на вэлью, не блефуй','Ставь тонкий вэлью на три улицы','Шире ловишь блефы против его нестандартной агрессии','Не пытайся переиграть его на более высоком уровне']},
+];
+const STAT_LBL={VPIP:'VPIP',PFR:'PFR','3B':'3-бет',AF:'AF',WTSD:'WTSD',F2CB:'Fold to c-bet'};
+const POP=[
+  ['Ривер недоблефовывают','Самый сильный лик пула. Крупная ставка или рейз на тёрне и ривере на низких лимитах почти всегда вэлью. Фолди блефкэтчеры против рейзов ривера, особенно в 3-бет потах и на монотонных и спаренных досках.'],
+  ['…но против овербетов оверфолдят','Пул привыкает фолдить. Крупные блефы на ривере с блокерами против регов приносят прибыль.'],
+  ['Третий барель','Против колл-колл-колл реги фолдят на третий барель около 56%. Блефуй, но не против станций с WTSD 40%+.'],
+  ['Пробы после пропущенного c-bet','Против ставки на тёрне после пропущенного c-bet фолдят около 60%. Ставь широко.'],
+  ['Пробы и отложенные c-bet переблефовывают','Против ставки после чек-бэка флопа защищайся легче: A-high и слабые пары часто становятся обязательным коллом.'],
+  ['Чек-рейз реже солвера','Пул чек-рейзит реже теории, поэтому его чек-рейз смещён в вэлью, особенно на тёрне и ривере.'],
+  ['Живая игра','Много лимпов, мультипоты, мало 3-бетов. Лимп-рирейз пассивного игрока — почти всегда AA или KK. Маленький донк — слабая топ-пара или дро, крупный — вэлью.'],
+  ['MTT с низким бай-ином','Коллируют слишком много. Тот, кто заколлировал флоп, коллирует и тёрн. На баббле пул оверфолдит, поэтому большим стеком воруй почти без ограничений.'],
+];
+const TELLS=[
+  ['Расслабленность после ставки','Болтает, пьёт, свободно двигается — чаще сила.','good'],
+  ['Замирание после крупной ставки','Неподвижность и молчание на ривере, особенно в контрасте с обычным поведением — чаще блеф.','warn'],
+  ['Быстрый колл','Средняя или слабая рука, диапазон ограничен сверху: с сильными руками и дро обычно думают о рейзе. Продолжай давить на скар-картах.','warn'],
+  ['Тянется к фишкам, когда ставишь ты','Попытка тебя остановить: слабая или средняя рука. Ставь.','warn'],
+  ['«Слабые» фразы при ставке','«Ну, поставлю немного, у меня ничего» — чаще сила.','good'],
+  ['Сайзинг рекреационала','Ставит линейно: больше ставка — сильнее рука. Мин-рейз постфлоп от пассивного игрока — монстр.','good'],
+  ['Онлайн-тайминг','Снап-колл на ривере — заранее решённый блефкэтчер. Танк, а затем рейз от слабого игрока — сила. Сигнал зашумлён мультитейблингом.','warn'],
+  ['Ненадёжные «теллы»','Взгляд на фишки после флопа, моргание, зрительный контакт сам по себе. Не опирайся на них.','bad'],
+];
+const DS={mode:'cards',open:'fish',quiz:null};
+function genHud(){const a=pick(ARCH);const st={};for(const k in a.st){const [lo,hi]=a.st[k];const v=lo+Math.random()*(hi-lo);st[k]=k==='AF'?v.toFixed(1):Math.round(v)}
+  const wrong=shuffle(ARCH.filter(x=>x.id!==a.id)).slice(0,3);const opts=shuffle([a,...wrong]);return{a,st,opts,sel:null}}
+function renderDossier(){
+  const head=`<div class="hero"><span class="eyebrow">Досье игроков</span><h1>Против каждого оппонента — план за 30 рук</h1><p>Ты играешь не против карт, а против людей, у которых предсказуемые ошибки. Задача: быстро опознать тип по статам и поведению, вспомнить его диапазоны и включить 2–3 главных эксплойта. Цифры — ориентиры для 6-max онлайн. В фулринге VPIP, PFR и 3-бет на 20–30% ниже.</p></div>
+    <div class="seg"><button aria-pressed="${DS.mode==='cards'}" data-act="ds-mode" data-m="cards">Типы игроков</button><button aria-pressed="${DS.mode==='quiz'}" data-act="ds-mode" data-m="quiz">Угадай тип по HUD</button><button aria-pressed="${DS.mode==='pop'}" data-act="ds-mode" data-m="pop">Популяция и теллы</button></div>`;
+  if(DS.mode==='quiz'){
+    if(!DS.quiz)DS.quiz={n:0,c:0,cur:genHud()};
+    const Q=DS.quiz,cur=Q.cur,ans=cur.sel!=null;
+    return head+`<div class="panel stack"><div class="row" style="justify-content:space-between"><h2>Кто это?</h2><span class="mono muted">${Q.c}/${Q.n}</span></div>
+      <div class="scroll-x"><table class="mini"><thead><tr>${Object.keys(cur.st).map(k=>`<th>${STAT_LBL[k]}</th>`).join('')}</tr></thead><tbody><tr>${Object.values(cur.st).map(v=>`<td class="mono" style="font-size:18px">${v}</td>`).join('')}</tr></tbody></table></div>
+      <div class="opts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr))">${cur.opts.map((o,i)=>{let c='';if(ans){if(o.id===cur.a.id)c='right';else if(i===cur.sel)c='wrong'}return `<button class="opt ${c}" data-act="ds-ans" data-i="${i}" ${ans?'disabled':''}><span class="k">${'ABCD'[i]}</span><span>${esc(o.n)}<br><span class="faint" style="font-size:12.5px">${esc(o.sub)}</span></span></button>`}).join('')}</div>
+      ${ans?`<div class="why ${cur.opts[cur.sel].id===cur.a.id?'good':'bad'}"><b>${esc(cur.a.n)}.</b> ${esc(cur.a.range)}<br><br><b>Главные эксплойты:</b> ${esc(cur.a.ex.slice(0,3).join('; '))}.</div><div class="row"><button class="btn primary" data-act="ds-next">Следующий</button></div>`:''}
+      <p class="faint" style="font-size:13px">Подсказка: сначала разрыв VPIP−PFR (пассивность), затем 3-бет и AF (агрессия), затем WTSD и Fold to c-bet (как играет постфлоп).</p></div>`;
+  }
+  if(DS.mode==='pop'){
+    return head+`<div class="panel stack"><h2>Популяционные тенденции</h2><p class="muted" style="font-size:14px">Против незнакомого игрока по умолчанию играй против пула. Это стартовые допущения, пока нет статов.</p>
+      <div class="grid2">${POP.map(([t,d])=>`<div class="stack-s"><h3>${esc(t)}</h3><p class="muted" style="font-size:14px">${esc(d)}</p></div>`).join('')}</div></div>
+      <div class="panel stack"><h2>Живые теллы, у которых есть основания</h2><p class="muted" style="font-size:14px">По Заку Элвуду: читай отклонения от базового поведения конкретного человека и кластеры сигналов вместе с линией ставок, а не одиночные жесты. Правило «сильный значит слабый» — частный случай.</p>
+      <div class="grid2">${TELLS.map(([t,d,k])=>`<div class="stack-s"><h3>${esc(t)} <span class="pill ${k}">${k==='good'?'сила':k==='warn'?'слабость':'шум'}</span></h3><p class="muted" style="font-size:14px">${esc(d)}</p></div>`).join('')}</div></div>
+      <div class="panel stack-s"><h3>Выборка решает</h3><p class="muted" style="font-size:14px">VPIP и PFR видны грубо через 15–20 рук, надёжно — через 100–500. 3-бет и Fold to 3-bet требуют 300–1000 рук. Постфлоп-статы считай по числу возможностей, а не по числу рук: «Fold to c-bet 80%» на 5 возможностях — шум.</p></div>`;
+  }
+  return head+`<div class="stack">${ARCH.map(a=>`<details class="week" ${DS.open===a.id?'open':''} data-ds="${a.id}"><summary><span class="stack-s" style="gap:3px;min-width:0"><h3>${esc(a.n)}</h3><span class="faint" style="font-size:13px">${esc(a.sub)}</span></span><span class="mono faint" style="font-size:12.5px;text-align:right">${a.st.VPIP[0]}–${a.st.VPIP[1]} / ${a.st.PFR[0]}–${a.st.PFR[1]}</span></summary>
+    <div class="wb stack"><div class="scroll-x"><table class="mini"><thead><tr>${Object.keys(a.st).map(k=>`<th>${STAT_LBL[k]}</th>`).join('')}</tr></thead><tbody><tr>${Object.values(a.st).map(([l,h])=>`<td class="mono">${l}–${h}</td>`).join('')}</tr></tbody></table></div>
+    <div class="grid2"><div class="stack-s"><span class="eyebrow">Как узнать</span>${a.tells.map(t=>`<p style="font-size:14px">· ${esc(t)}</p>`).join('')}<p class="muted" style="font-size:14px;margin-top:6px">${esc(a.range)}</p></div>
+    <div class="stack-s"><span class="eyebrow">Как обыгрывать</span>${a.ex.map((t,i)=>`<p style="font-size:14px"><b class="mono" style="color:var(--brass)">${i+1}</b> ${esc(t)}</p>`).join('')}</div></div></div></details>`).join('')}</div>`;
+}
+ACTS['ds-mode']=(el)=>{DS.mode=el.dataset.m;render()};
+ACTS['ds-ans']=(el)=>{const Q=DS.quiz;if(Q.cur.sel!=null)return;Q.cur.sel=+el.dataset.i;Q.n++;const ok=Q.cur.opts[Q.cur.sel].id===Q.cur.a.id;if(ok)Q.c++;
+  const st=S.stats.exploit||(S.stats.exploit={c:0,t:0});st.t++;if(ok)st.c++;logEvent('hud','exploit',ok?1:0,1);save();render()};
+ACTS['ds-next']=()=>{DS.quiz.cur=genHud();render()};
+document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.dataset&&d.dataset.ds&&d.open)DS.open=d.dataset.ds},true);
+
+/* ============================== MENTAL ============================== */
+const TILT_TYPES={
+  bad:{n:'Тилт от бэдбитов',fix:'Перед сессией проговори: «Сегодня у меня будут кулеры, это стоимость бизнеса». Считай EV, а не результат: в журнале оценивай решения, не выигрыши.'},
+  injustice:{n:'Тилт несправедливости',fix:'Фраза-якорь: «Дисперсия не знает, сколько я работал». Веди учёт олл-ин EV — за длинную дистанцию он выровняется.'},
+  hate:{n:'Ненависть к проигрышу',fix:'Стоп-лосс 3 бай-ина, заранее записанный. Цель сессии — качество решений, не плюс.'},
+  mistake:{n:'Тилт от собственных ошибок',fix:'Ошибки не разбирай за столом: отметь раздачу и вернись к ней после. Перфекционизм лечится нормой: «5 ошибок за сессию — это нормально, моя задача их найти».'},
+  entitle:{n:'Тилт «я заслуживаю»',fix:'Сильнее не значит «выигрываю каждую сессию». Сравнивай себя с прошлым собой, а не с результатом. Скромные цели на сессию.'},
+  revenge:{n:'Тилт мести',fix:'Как только хочется «наказать» конкретного игрока — встань из-за стола на 5 минут. Месть заставляет играть против человека, а не против его диапазона.'},
+  desperation:{n:'Тилт отчаяния',fix:'Жёсткое правило: при минусе больше X бай-инов сессия закончена без переговоров. «Отыграться» — главный признак отчаяния.'},
+};
+const TILT_QS=[
+  ['bad','После кулера или бэдбита я ещё минут 10–20 играю хуже обычного.'],
+  ['bad','Длинный даунсвинг меняет моё отношение к игре: начинаю играть «на авось» или пассивно.'],
+  ['injustice','Меня бесит, когда слабый игрок выигрывает у меня глупым коллом.'],
+  ['injustice','Я думаю «мне вечно не везёт больше, чем другим».'],
+  ['hate','Минусовая сессия портит мне настроение на весь вечер.'],
+  ['hate','Мне сложно закончить сессию в минусе, даже если я устал.'],
+  ['mistake','Заметив свою ошибку посреди сессии, я долго не могу перестать о ней думать.'],
+  ['mistake','Я жёстко ругаю себя за ошибки, которые «не должен был допустить».'],
+  ['entitle','Я считаю, что с моим уровнем должен выигрывать на этом лимите стабильно.'],
+  ['entitle','Проигрыш более слабым игрокам воспринимаю как личное оскорбление.'],
+  ['revenge','Если игрок меня «наказал», я начинаю чаще с ним конфликтовать (3-беты, блефы).'],
+  ['revenge','Я запоминаю конкретных оппонентов и хочу «вернуть своё» именно у них.'],
+  ['desperation','Я играю дольше запланированного, когда в минусе.'],
+  ['desperation','Бывало, что я поднимался на лимит выше, чтобы быстрее отыграться.'],
+];
+const PRE=[
+  ['sleep','Я выспался и не голоден'],['mood','Нет фоновых проблем, которые будут грызть в сессии'],
+  ['goal','Цель сессии сформулирована (одна, процессная: например, «на ривере считаю комбо блефов»)'],
+  ['stop','Знаю стоп-лосс и время окончания'],['warm','Сделал разминку: счёт на скорость или 10 спотов'],
+];
+const TRIGGERS=['кулер/бэдбит','своя ошибка','долгая серия без раздач','конфликт с игроком','минус за сессию','усталость','отвлекался'];
+const MT={tiltAns:{},pre:{},j:{a:60,tilt:3,trig:[],dur:'',note:'',res:''},showTilt:false};
+function renderMental(){
+  const tilt=S.tilt;
+  const preDone=doneToday('pre');
+  const js=S.journal.slice(-14);
+  return `<div class="hero"><span class="eyebrow">Ментальная игра</span><h1>Голова — тоже навык</h1><p>По модели Джареда Тендлера твоя игра — это диапазон от A-game до C-game. Расти можно двумя путями: поднимать пик (учёба) и поднимать дно (ментал). Второе обычно быстрее окупается: одна сессия в тилте съедает неделю хорошей игры.</p></div>
+    <div class="grid2">
+      <div class="panel stack"><div class="stack-s"><span class="eyebrow">До игры · 2 минуты</span><h2>Чек-лист готовности</h2></div>
+        <div>${PRE.map(([k,t])=>`<div class="check ${MT.pre[k]?'done':''}"><input type="checkbox" id="pre-${k}" data-act="pre" data-k="${k}" ${MT.pre[k]?'checked':''}><label for="pre-${k}"><span>${esc(t)}</span></label></div>`).join('')}</div>
+        ${preDone?'<span class="pill good">Ритуал сегодня пройден</span>':`<button class="btn primary" data-act="pre-done" ${PRE.every(([k])=>MT.pre[k])?'':'disabled'}>Готов играть</button><p class="faint" style="font-size:13px">Если хоть один пункт «нет» — это не запрет, но сегодня играй короче и строже к стоп-лоссу.</p>`}
+      </div>
+      <div class="panel stack"><div class="stack-s"><span class="eyebrow">Профиль тилта</span><h2>${tilt?'Твои главные триггеры':'Узнай свой тип тилта'}</h2></div>
+        ${tilt&&!MT.showTilt?`<div class="stack">${tilt.top.map(id=>`<div class="stack-s"><h3>${esc(TILT_TYPES[id].n)} <span class="pill warn">${pct(tilt.scores[id])}%</span></h3><p class="muted" style="font-size:14px">${esc(TILT_TYPES[id].fix)}</p></div>`).join('<hr class="divider">')}<button class="btn small" data-act="tilt-redo">Пройти заново</button></div>`
+        :`<p class="muted" style="font-size:14px">14 утверждений, оценка от 1 (совсем не про меня) до 5 (точно про меня). Отвечай про последние 3 месяца.</p>
+          <div class="stack-s">${TILT_QS.map(([t,q],i)=>`<div class="field"><span class="lbl" style="color:var(--ink);font-weight:500">${esc(q)}</span><div class="seg">${[1,2,3,4,5].map(v=>`<button aria-pressed="${MT.tiltAns[i]===v}" data-act="tilt" data-i="${i}" data-v="${v}">${v}</button>`).join('')}</div></div>`).join('')}</div>
+          <button class="btn primary" data-act="tilt-done" ${Object.keys(MT.tiltAns).length===TILT_QS.length?'':'disabled'}>Показать профиль</button>`}
+      </div>
+    </div>
+    <div class="panel stack"><div class="stack-s"><span class="eyebrow">После игры · 3 минуты</span><h2>Журнал сессии</h2><p class="muted" style="font-size:14px">Оценивай качество решений, не деньги. Деньги на дистанции в одну сессию — шум.</p></div>
+      <div class="grid2">
+        <div class="field"><label for="j-a">Доля времени в A-game: <b class="mono" id="j-a-v">${MT.j.a}%</b></label><input type="range" id="j-a" min="0" max="100" step="5" value="${MT.j.a}" data-act-input="j-a"></div>
+        <div class="field"><label for="j-t">Максимальный тилт: <b class="mono" id="j-t-v">${MT.j.tilt}/10</b></label><input type="range" id="j-t" min="0" max="10" step="1" value="${MT.j.tilt}" data-act-input="j-t"></div>
+        <div class="field"><label for="j-dur">Длительность, мин</label><input type="number" id="j-dur" min="0" step="5" value="${esc(MT.j.dur)}" placeholder="120"></div>
+        <div class="field"><label for="j-res">Результат, бай-ины (необязательно)</label><input type="number" id="j-res" step="0.1" value="${esc(MT.j.res)}" placeholder="-1.5"></div>
+      </div>
+      <div class="field"><span class="lbl">Что выбивало из колеи</span><div class="seg">${TRIGGERS.map(t=>`<button aria-pressed="${MT.j.trig.includes(t)}" data-act="j-trig" data-v="${esc(t)}">${esc(t)}</button>`).join('')}</div></div>
+      <div class="field"><label for="j-note">Раздача на разбор и главный вывод</label><textarea id="j-note" rows="3" placeholder="Например: 3-бет пот, ривер колл против нита с блефкэтчером. Вывод: против этого профиля ривер-рейз = натсы.">${esc(MT.j.note)}</textarea></div>
+      <div class="row"><button class="btn primary" data-act="j-save">Сохранить сессию</button>${sampleFn?`<span class="faint" style="font-size:13px">Раздачу можно отправить на разбор в разделе AI-тренер.</span>`:''}</div>
+      ${js.length?`<hr class="divider"><h3>Последние сессии</h3>${lineChart(js.map(x=>({l:fmtDate(x.d),v:x.a/100})),{label:'Доля A-game'})}
+      <div class="scroll-x"><table class="mini"><thead><tr><th>Дата</th><th>A-game</th><th>Тилт</th><th>Мин</th><th>BI</th><th>Триггеры</th><th>Вывод</th></tr></thead><tbody>${js.slice().reverse().map(x=>`<tr><td class="mono">${esc(fmtDate(x.d))}</td><td class="mono">${x.a}%</td><td class="mono">${x.tilt}</td><td class="mono">${esc(x.dur||'—')}</td><td class="mono">${x.res===''||x.res==null?'—':esc(x.res)}</td><td>${esc((x.trig||[]).join(', ')||'—')}</td><td style="min-width:200px">${esc(x.note||'')}</td></tr>`).join('')}</tbody></table></div>`:''}
+    </div>
+    <div class="panel stack-s"><span class="eyebrow">Правила, которые держат дно</span>
+      <div class="grid3">
+        <div class="stack-s"><h3>Стоп-лосс заранее</h3><p class="muted" style="font-size:14px">3 бай-ина в кэше или 2 часа после первого сильного тилта. Записано до сессии, не обсуждается во время.</p></div>
+        <div class="stack-s"><h3>Правило одной раздачи</h3><p class="muted" style="font-size:14px">После раздачи, которая «задела», пропусти следующую раздачу (sit out на одну), сделай 3 медленных вдоха, назови эмоцию вслух.</p></div>
+        <div class="stack-s"><h3>Решение, а не результат</h3><p class="muted" style="font-size:14px">Вопрос после каждой крупной раздачи: «Сыграл бы я так же, если бы видел, что проиграю?» Если да — раздача сыграна хорошо.</p></div>
+      </div></div>`;
+}
+ACTS.pre=(el)=>{MT.pre[el.dataset.k]=el.checked;render()};
+ACTS['pre-done']=()=>{if(!doneToday('pre'))logEvent('pre',null,0,0);save();toast('Удачной сессии. Играй свою цель.');render()};
+ACTS.tilt=(el)=>{MT.tiltAns[+el.dataset.i]=+el.dataset.v;render()};
+ACTS['tilt-redo']=()=>{MT.showTilt=true;MT.tiltAns={};render()};
+ACTS['tilt-done']=()=>{const sc={};Object.keys(TILT_TYPES).forEach(k=>{const xs=TILT_QS.map((q,i)=>q[0]===k?MT.tiltAns[i]:null).filter(v=>v!=null);sc[k]=(xs.reduce((a,b)=>a+b,0)/xs.length-1)/4});
+  const top=Object.keys(sc).sort((a,b)=>sc[b]-sc[a]).slice(0,3);S.tilt={scores:sc,top,d:today()};MT.showTilt=false;save();render()};
+ACTS['j-trig']=(el)=>{const v=el.dataset.v;MT.j.trig=MT.j.trig.includes(v)?MT.j.trig.filter(x=>x!==v):MT.j.trig.concat(v);syncJ();render()};
+function syncJ(){const g=id=>{const e=$('#'+id);return e?e.value:''};MT.j.dur=g('j-dur');MT.j.res=g('j-res');MT.j.note=g('j-note')}
+ACTS['j-save']=()=>{syncJ();S.journal.push({d:today(),a:MT.j.a,tilt:MT.j.tilt,trig:MT.j.trig,dur:MT.j.dur,res:MT.j.res,note:MT.j.note});logEvent('journal',null,0,0);MT.j={a:60,tilt:3,trig:[],dur:'',note:'',res:''};save();toast('Сессия записана');render()};
+document.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.actInput;if(k==='j-a'){MT.j.a=+e.target.value;$('#j-a-v').textContent=MT.j.a+'%'}if(k==='j-t'){MT.j.tilt=+e.target.value;$('#j-t-v').textContent=MT.j.tilt+'/10'}});
+
+/* ============================== PLAN ============================== */
+const WEEK_LIB={
+  math:{t:'Математика на автомате',goal:'Шансы банка, MDF и комбо — без пауз за столом.',tasks:['Каждый день разминка «Счёт на скорость», цель 14/15 и <6 с','Выучи шпаргалку сайзингов: эквити для колла, MDF, нужные фолды','В каждой сессии на ривере вслух (про себя) считай: «мне нужно X% — сколько у него блефов?»','5 раздач из базы: посчитай комбо вэлью и блефов оппонента на ривере','Тренажёр: 2 сессии по оси «Математика»']},
+  ranges:{t:'Мышление диапазонами',goal:'Привычка видеть 3 корзины на каждой улице: вэлью, дро/блефы, блефкэтчеры.',tasks:['Нарисуй все 6 эталонных диапазонов на 85%+','Каждую крупную раздачу в журнале записывай как «диапазон → действие», а не «рука → действие»','Упражнение «сужение»: 3 раздачи, после каждой улицы выписывай, какие руки ушли из диапазона оппонента','Тренажёр: 2 сессии по оси «Чтение диапазонов»','AI-тренер: разбери одну раздачу, где ты ошибся в чтении']},
+  postflop:{t:'Постфлоп-стратегия',goal:'Понимать, почему солвер ставит маленько на сухих досках и чекает на связанных.',tasks:['Тренажёр: 3 сессии по оси «Постфлоп»','Выпиши правило c-bet для 4 типов флопов: сухой высокий, спаренный, связанный средний, монотонный','Найди в своей базе 10 тёрнов, где ты не продолжил баррель, и проверь, были ли у тебя хорошие блефы с эквити','Ривер: в каждой раздаче на ривере называй себе свой лучший блеф по блокерам','AI-тренер: сгенерируй споты по оси «Постфлоп»']},
+  exploit:{t:'Чтение игроков и эксплойт',goal:'Против каждого оппонента иметь план за 30 рук.',tasks:['На каждой сессии ставь метку-профиль минимум 5 оппонентам (фиш, нит, маньяк, рег, станция)','Под каждый профиль запиши 3 главных эксплойта и используй их','Тренажёр: 3 сессии по оси «Чтение игроков»','Отслеживай сайзинг-теллы рекреационалов: маленькая ставка = слабость или натсы? Записывай','AI-тренер: опиши самого неприятного оппонента и получи план игры против него']},
+  preflop:{t:'Префлоп без дыр',goal:'Чёткие 3-бет/колл/фолд ответы на открытия с каждой позиции.',tasks:['Нарисуй диапазоны BB 3-бет и SB-открытие на 85%+','Тренажёр: 2 сессии по оси «Префлоп»','Посмотри свою статистику: фолд на 3-бет, 3-бет по позициям. Сравни с нормами 45–55% и 6–10%','Сквизы: отметь 5 спотов за неделю, где был сквиз, и проверь, сделал ли ты его','Против каждого регуляра отметь его 3-бет и подстрой 4-бет блефы']},
+  mental:{t:'Голова и дисциплина',goal:'Поднять дно: меньше C-game, меньше сессий в тилте.',tasks:['Пройди профиль тилта и выпиши фразу-якорь под главный тип','Ритуал перед каждой сессией — без исключений','Журнал после каждой сессии, честная доля A-game','Стоп-лосс записан на неделю вперёд','Тренажёр: 1 сессия по оси «Ментальная игра»']},
+};
+function planWeeks(){
+  const w=weakestAxes().map(x=>x.id);const order=[...w,...AXES.map(a=>a.id).filter(id=>!w.includes(id))];
+  const uniq=[...new Set(order)];
+  const weeks=[{id:'w0',t:'Неделя 1 · База и ритм',goal:'Установить ежедневную структуру и снять точный профиль.',tasks:['Пройти диагностику','Профиль тилта + чек-лист перед каждой сессией','Ежедневная программа минимум 5 дней из 7','Разминка «Счёт на скорость» каждый день','Журнал после каждой сессии']}];
+  uniq.slice(0,6).forEach((id,i)=>{const L=WEEK_LIB[id];weeks.push({id:'w'+(i+1)+'-'+id,t:`Неделя ${i+2} · ${L.t}`,goal:L.goal,tasks:L.tasks,axis:id})});
+  weeks.push({id:'w7',t:'Неделя 8 · Контрольная',goal:'Повторная диагностика и новый план.',tasks:['Пройти диагностику заново и сравнить радар','Разобрать с AI-тренером 3 самые дорогие раздачи месяца','Сравнить долю A-game в журнале с первой неделей','Выбрать две оси на следующий цикл']});
+  return weeks;
+}
+function currentWeek(){if(!S.plan.start)return 0;const d=Math.floor((Date.now()-new Date(S.plan.start+'T00:00:00').getTime())/(7*DAY));return clamp(d,0,7)}
+function renderPlan(){
+  const weeks=planWeeks();const cw=currentWeek();
+  return `<div class="hero"><span class="eyebrow">Программа на 8 недель</span><h1>План, собранный под твои слабые места</h1><p>${S.diag?'Порядок недель выстроен от самой слабой оси к сильной и пересчитывается по мере тренировок.':'Пока порядок стандартный. После диагностики недели перестроятся под твои слабые оси.'} Каждый день: 60–90 минут = 15 мин разминка + 25 мин тренажёр/диапазоны + игра с одной целью + 10 мин журнал.</p></div>
+    <div class="panel stack-s"><h3>Пропорция учёбы и игры</h3><p class="muted" style="font-size:14px">На этапе роста держи 30–40% времени на учёбу. Игра без разбора закрепляет и хорошие, и плохие привычки одинаково. Учёба без игры не проверяется реальностью.</p></div>
+    <div class="stack">${weeks.map((w,i)=>{const done=w.tasks.filter((_,k)=>S.plan.done[w.id+':'+k]).length;return `<details class="week" ${i===cw?'open':''}><summary><span class="stack-s" style="gap:4px;min-width:0"><span class="wk-n">${i===cw&&S.plan.start?'ТЕКУЩАЯ НЕДЕЛЯ':'НЕДЕЛЯ '+(i+1)}</span><h3>${esc(w.t.replace(/^Неделя \d+ · /,''))}</h3></span><span class="pill ${done===w.tasks.length?'good':''}">${done}/${w.tasks.length}</span></summary><div class="wb stack-s"><p class="muted">${esc(w.goal)}</p>${w.tasks.map((t,k)=>{const key=w.id+':'+k;const d=!!S.plan.done[key];return `<div class="check ${d?'done':''}"><input type="checkbox" id="pl-${esc(key)}" data-act="plan" data-k="${esc(key)}" ${d?'checked':''}><label for="pl-${esc(key)}"><span>${esc(t)}</span></label></div>`}).join('')}${w.axis?`<div class="row"><button class="btn small" data-act="train-cat" data-cat="${w.axis}">Тренажёр по этой оси</button></div>`:''}</div></details>`}).join('')}</div>
+    <div class="panel stack-s"><span class="eyebrow">Как работать с тренером дальше</span><p class="muted" style="font-size:14px">Раз в неделю возвращайся в чат с Claude и скажи «проверь мой прогресс в штабе». Твои результаты синхронизируются, и я скорректирую план, добавлю споты и упражнения под то, что увижу.</p></div>`;
+}
+ACTS.plan=(el)=>{const k=el.dataset.k;if(el.checked)S.plan.done[k]=true;else delete S.plan.done[k];save();render()};
+
+/* ============================== boot ============================== */
+renderTabs();render();
+initCaps();
+</script>
