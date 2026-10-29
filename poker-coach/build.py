@@ -1,7 +1,7 @@
 import json,re,sys,os
 SP='/tmp/claude-0/-home-user-fff/a97f84f5-1dec-5ee8-bc8b-d5438a95a846/scratchpad/scenarios.json'
 bank=[]
-for f in ['bank.json','exploit_extra.json']:
+for f in ['bank.json','exploit_extra.json','simple.json']:
     if os.path.exists(f): bank+=json.load(open(f))
 CARD=re.compile(r'^[2-9TJQKA][shdc]$')
 ids=set();errs=[]
@@ -30,4 +30,15 @@ print(Counter((q['cat'],q['level']) for q in bank))
 print(len(bank),Counter(q['cat'] for q in bank),Counter(q['ans'] for q in bank))
 t=open('app.template.html').read()
 data='const BANK='+json.dumps(bank,ensure_ascii=False,separators=(',',':'))+';'
-open('index.html','w').write(t.replace('/*__DATA__*/',data))
+hands=json.load(open('hands.json')) if os.path.exists('hands.json') else []
+for h in hands:
+    cs=h['hero'].split()
+    for st in h['steps']:
+        bd=st['board'].split()
+        for c in cs+bd: assert CARD.match(c),(h['id'],c)
+        assert len(set(cs+bd))==len(cs+bd),(h['id'],'dup',cs+bd)
+        assert sum(st['range'].values())==100,(h['id'],st['range'])
+        assert 0<=st['best']<len(st['opts']),h['id']
+print('hands',len(hands))
+lessons=open('lessons.js').read()
+open('index.html','w').write(t.replace('/*__DATA__*/',data).replace('/*__LESSONS__*/',lessons).replace('/*__HANDS__*/','const HANDS='+json.dumps(hands,ensure_ascii=False,separators=(',',':'))+';'))

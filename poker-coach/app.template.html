@@ -13,6 +13,7 @@
   --panel:rgba(5,24,21,.42);
   --paper:#f8f3e7; --paper-ink:#1b1a17;
   --s-spade:#1b1a17; --s-heart:#c8382e; --s-diam:#2463c9; --s-club:#1f7f45;
+  --bk-strong:#ef7a63; --bk-medium:#e8bf55; --bk-draw:#73a9ff; --bk-air:#5e7a71;
   --good:#63d18f; --bad:#f0705f; --warn:#f0c04f; --info:#7fb7ff;
   --f-display:"Unbounded","Arial Black",system-ui,sans-serif;
   --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -98,6 +99,7 @@ section.screen{display:flex;flex-direction:column;gap:18px}
 
 /* felt table strip for scenarios */
 .table{border-radius:18px;padding:16px;background:radial-gradient(ellipse at 50% 30%,#1d6a5b,#114237 75%);box-shadow:inset 0 0 0 6px var(--rail-2),inset 0 0 0 7px #000,inset 0 0 40px rgba(0,0,0,.45);display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center}
+.table.nohero{grid-template-columns:1fr auto}
 .table .slot{display:flex;flex-direction:column;gap:6px;align-items:flex-start;min-width:0}
 .table .slot.mid{align-items:center}
 .table .lab{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:rgba(241,234,217,.65);font-weight:600}
@@ -188,6 +190,32 @@ input[type=range]{width:100%;accent-color:var(--brass)}
 .week .wb{padding:12px 16px}
 .wk-n{font:800 12px/1 var(--f-display);color:var(--brass);letter-spacing:.06em}
 
+.term{border-bottom:1.5px dotted color-mix(in srgb,var(--brass) 80%,transparent);cursor:help}
+.term:hover,.term:focus{color:var(--brass);outline:none}
+#pop{position:fixed;z-index:60;background:var(--paper);color:var(--paper-ink);border-radius:10px;padding:10px 13px;font-size:14px;line-height:1.45;box-shadow:0 10px 30px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:3px}
+#pop b{font-weight:700}
+#pop[hidden],[hidden]{display:none!important}
+.lesson{max-width:72ch}
+.lesson h1{margin-bottom:4px}
+.lp{font-size:16px;line-height:1.65}
+.ll{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15.5px;line-height:1.55}
+.rule{border:1px solid color-mix(in srgb,var(--brass) 55%,transparent);background:rgba(217,173,85,.1);border-radius:var(--r);padding:12px 16px;display:flex;flex-direction:column;gap:4px}
+.rule p{font-size:16px;font-weight:600;line-height:1.5}
+table.lt td{font-size:14.5px;line-height:1.5}
+table.lt td.lt-first{font-weight:600;white-space:nowrap}
+.ex{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);border-radius:var(--r);padding:14px;background:var(--panel)}
+.ex>p{font-size:15.5px}
+.lcard{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:14px;border-radius:10px;border:1px solid var(--line-2);background:rgba(241,234,217,.04);min-width:0}
+.lcard:hover{border-color:var(--brass);background:rgba(241,234,217,.08)}
+.lcard b{font-size:15.5px;line-height:1.35}
+.bk{display:flex;flex-direction:column;gap:7px}
+.bk-t{font-size:13px;font-weight:600;color:var(--muted)}
+.bk-bar{display:flex;height:16px;border-radius:999px;overflow:hidden;gap:2px;background:rgba(241,234,217,.06)}
+.bk-bar i{display:block;height:100%}
+.bk-l{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted)}
+.bk-l i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:0}
+.bk-l b{color:var(--ink)}
+.rg.ro div{cursor:default}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--paper);color:var(--paper-ink);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.4);z-index:50}
 .big-num{font:800 clamp(40px,9vw,64px)/1 var(--f-display);letter-spacing:-.02em}
 .archetype{border:1px solid color-mix(in srgb,var(--brass) 45%,transparent);background:linear-gradient(135deg,rgba(217,173,85,.12),rgba(217,173,85,.02));border-radius:var(--r);padding:18px}
@@ -210,20 +238,23 @@ table.mini th{color:var(--muted);font-weight:600;font-size:12px}
 </header>
 <div class="wrap"><main id="main"></main></div>
 <div class="toast" id="toast" hidden></div>
+<div id="pop" hidden></div>
 
 <script>
 /*__DATA__*/
+/*__LESSONS__*/
+/*__HANDS__*/
 </script>
 <script>
 "use strict";
 /* ============================== constants ============================== */
 const AXES=[
-  {id:'math',short:'Математика',name:'Математика',desc:'шансы банка, MDF, ауты, комбинаторика'},
-  {id:'ranges',short:'Диапазоны',name:'Чтение диапазонов',desc:'сужение диапазона по линии, комбо, блокеры'},
-  {id:'postflop',short:'Постфлоп',name:'Постфлоп-стратегия',desc:'c-bet, сайзинги, баррели, value/блеф на ривере'},
-  {id:'exploit',short:'Игроки',name:'Чтение игроков',desc:'профили, статы, тайминги, эксплойты'},
-  {id:'preflop',short:'Префлоп',name:'Префлоп',desc:'3-бет/4-бет, сквиз, защита, SPR'},
-  {id:'mental',short:'Ментал',name:'Ментальная игра',desc:'тилт, процесс решений, дисциплина'},
+  {id:'math',short:'Счёт',name:'Простой счёт',desc:'хватает ли шансов для колла, сколько аутов'},
+  {id:'ranges',short:'Что у него',name:'Что у соперника',desc:'какие руки остались у соперника после его действий'},
+  {id:'postflop',short:'После флопа',name:'Игра после флопа',desc:'когда ставить, сколько улиц, дро, ривер'},
+  {id:'exploit',short:'Соперники',name:'Типы соперников',desc:'станция, нит, маньяк, регуляр — как играть против каждого'},
+  {id:'preflop',short:'Префлоп',name:'Префлоп',desc:'какие руки играть, против рейза, короткий стек'},
+  {id:'mental',short:'Дистанция',name:'Голова и дистанция',desc:'тилт, банкролл, как быть в плюсе на длинной дистанции'},
 ];
 const AXIS=Object.fromEntries(AXES.map(a=>[a.id,a]));
 const RANKS='AKQJT98765432';
@@ -253,7 +284,7 @@ const tx=s=>esc(s).replace(/[♠♥♦♣]/g,m=>`<span class="st ${{'♠':'s','�
 const cardsOf=(str,sm)=>String(str||'').trim().split(/\s+/).filter(x=>/^[2-9TJQKA1][shdc]$/i.test(x)).map(c=>card(c,sm)).join('');
 
 /* ============================== state ============================== */
-function defaultState(){return{v:1,updatedAt:0,profile:null,diag:null,diagHistory:[],stats:{},srs:{},log:[],journal:[],tilt:null,plan:{done:{},start:null},aiQs:[],mathBest:null,rangeBest:{},routine:{}}}
+function defaultState(){return{v:1,updatedAt:0,profile:null,diag:null,diagHistory:[],stats:{},srs:{},log:[],journal:[],tilt:null,plan:{done:{},start:null},aiQs:[],mathBest:null,rangeBest:{},routine:{},lessons:{},hands:{},prefs:{adv:false}}}
 let S=defaultState();
 function normalize(o){const d=defaultState();if(!o||typeof o!=='object')return d;for(const k in d){if(o[k]!==undefined)d[k]=o[k]}return d}
 try{const raw=localStorage.getItem(LS_KEY);if(raw)S=normalize(JSON.parse(raw))}catch(e){}
@@ -310,8 +341,9 @@ function recordAnswer(q,ok){
   S.srs[q.id]=r;
 }
 function allQs(){return BANK.concat(S.aiQs||[])}
+function poolQs(){return S.prefs&&S.prefs.adv?allQs():allQs().filter(q=>q.simple||q.ai)}
 function qById(id){return allQs().find(q=>q.id===id)}
-function dueQs(){const n=Date.now();return allQs().filter(q=>{const r=S.srs[q.id];return r&&r.due<=n})}
+function dueQs(){const n=Date.now();return poolQs().filter(q=>{const r=S.srs[q.id];return r&&r.due<=n})}
 function axisScore(id){
   // blend: latest diagnostic and drill accuracy (drills weigh more as volume grows)
   const d=S.diag&&S.diag.axes[id];const st=S.stats[id];
@@ -368,8 +400,8 @@ function barsHTML(rows){return `<div class="bars">${rows.map(r=>{const v=r.v;con
 function tableHTML(q){
   const hasHero=q.hero&&cardsOf(q.hero),hasBoard=q.board&&cardsOf(q.board);
   if(!hasHero&&!hasBoard&&q.pot==null&&q.stack==null&&!q.pos)return '';
-  return `<div class="table">
-    <div class="slot"><span class="lab">Твои карты</span>${hasHero?`<span class="cards">${cardsOf(q.hero)}</span>`:`<span class="cards"><span class="pc back"></span><span class="pc back"></span></span>`}</div>
+  return `<div class="table${q.nohero?' nohero':''}">
+    ${q.nohero?'':`<div class="slot"><span class="lab">Твои карты</span>${hasHero?`<span class="cards">${cardsOf(q.hero)}</span>`:`<span class="cards"><span class="pc back"></span><span class="pc back"></span></span>`}</div>`}
     <div class="slot mid"><span class="lab">${q.pos?esc(q.pos):'Борд'}</span>${hasBoard?`<span class="cards">${cardsOf(q.board)}</span>`:`<span class="faint" style="font-size:13px">префлоп</span>`}</div>
     <div class="nums">${q.pot!=null?`<span class="lab">Банк</span><span class="num">${esc(q.pot)} bb</span>`:''}${q.stack!=null?`<span class="lab">Эфф. стек</span><span class="num">${esc(q.stack)} bb</span>`:''}</div>
   </div>`;
@@ -378,27 +410,30 @@ const LVL=['','базовый','средний','продвинутый'];
 
 /* ============================== router ============================== */
 const TABS=[
-  {id:'home',name:'Штаб'},{id:'diag',name:'Диагностика'},{id:'train',name:'Тренажёр'},
-  {id:'ranges',name:'Диапазоны'},{id:'players',name:'Досье игроков'},{id:'speed',name:'Счёт на скорость'},{id:'ai',name:'AI-тренер'},
-  {id:'mental',name:'Ментал'},{id:'plan',name:'План'},
+  {id:'home',name:'Главная'},{id:'school',name:'Школа'},{id:'hands',name:'Раздачи'},{id:'train',name:'Тренажёр'},
+  {id:'ranges',name:'Диапазоны'},{id:'players',name:'Соперники'},{id:'ai',name:'AI-тренер'},
+  {id:'mental',name:'Голова'},{id:'plan',name:'План'},
 ];
+const HIDDEN_TABS=['diag','speed'];
 let tab='home';
-try{const t=localStorage.getItem(LS_KEY+'.tab');if(t&&TABS.some(x=>x.id===t))tab=t}catch(e){}
-if(location.hash&&TABS.some(x=>x.id===location.hash.slice(1)))tab=location.hash.slice(1);
+try{const t=localStorage.getItem(LS_KEY+'.tab');if(t&&(TABS.some(x=>x.id===t)||HIDDEN_TABS.includes(t)))tab=t}catch(e){}
+if(location.hash&&(TABS.some(x=>x.id===location.hash.slice(1))||HIDDEN_TABS.includes(location.hash.slice(1))))tab=location.hash.slice(1);
 function go(t){stopTimers();tab=t;try{localStorage.setItem(LS_KEY+'.tab',t)}catch(e){}renderTabs();render();window.scrollTo({top:0})}
-function renderTabs(){$('#tabs').innerHTML=TABS.map(t=>`<button role="tab" aria-selected="${t.id===tab}" data-go="${t.id}">${t.name}</button>`).join('')}
+function renderTabs(){const act=HIDDEN_TABS.includes(tab)?'train':tab;$('#tabs').innerHTML=TABS.map(t=>`<button role="tab" aria-selected="${t.id===act}" data-go="${t.id}">${t.name}</button>`).join('')}
 let timers=[];function stopTimers(){timers.forEach(clearInterval);timers=[]}
 function rerender(){if(!busy)render()}
 let busy=false;
 function render(){
   const m=$('#main');
-  const f={home:renderHome,diag:renderDiag,train:renderTrain,ranges:renderRanges,players:renderDossier,speed:renderSpeed,ai:renderAI,mental:renderMental,plan:renderPlan}[tab];
+  const f={home:renderHome,school:renderSchool,hands:renderHands,diag:renderDiag,train:renderTrain,ranges:renderRanges,players:renderDossier,speed:renderSpeed,ai:renderAI,mental:renderMental,plan:renderPlan}[tab];
   m.innerHTML=`<section class="screen">${f()}</section>`;
   if(after){const a=after;after=null;a()}
 }
 let after=null;
 document.addEventListener('click',e=>{
-  const g=e.target.closest('[data-go]');if(g){go(g.dataset.go);return}
+  const term=e.target.closest('.term');if(term){e.preventDefault();showGloss(term);return}
+  hideGloss();
+  const g=e.target.closest('[data-go]');if(g){if(g.closest('nav')){SC.open=null;HP.open=null}go(g.dataset.go);return}
   const a=e.target.closest('[data-act]');if(a&&ACTS[a.dataset.act]){ACTS[a.dataset.act](a,e)}
 });
 const ACTS={};
@@ -409,82 +444,79 @@ function archetype(){
   const tech=(g('math')+g('preflop')+g('postflop'))/3,read=(g('ranges')+g('exploit'))/2,head=g('mental');
   const cal=S.diag.calib;
   let a;
-  if(tech>=.7&&read<.55)a={n:'Технарь',d:'Ты хорошо знаешь «как правильно», но играешь против карт, а не против людей. Деньги на твоём уровне лежат в чтении конкретного оппонента: кто перебластит, кто никогда не блефует, у кого сайзинг рассказывает о руке.',f:['ranges','exploit']};
-  else if(read>=.7&&tech<.55)a={n:'Чуйщик',d:'Ты чувствуешь людей и линии, но фундамент под чтением шаткий. Без точной математики и базовой стратегии хорошие риды превращаются в дорогие догадки. Цементируем технику, чтобы твои риды стали оружием.',f:['math','postflop']};
-  else if(tech>=.7&&read>=.7&&head<.6)a={n:'Сильный, но хрупкий',d:'Покерные навыки выше среднего, но голова — бутылочное горлышко. Чаще всего такой игрок отдаёт свой винрейт в C-game: после бэдбитов, на длинных сессиях, в погоне за отыгрышем.',f:['mental']};
-  else if(tech>=.7&&read>=.7)a={n:'Готов к следующему лимиту',d:'Сильная база по всем осям. Дальше рост идёт за счёт тонких спотов: частоты, блокеры, нестандартные сайзинги и глубокий разбор собственных сессий.',f:[]};
-  else if(tech<.5&&read<.5)a={n:'Строитель фундамента',d:'Опыт есть, но решения пока держатся на привычках, а не на расчёте. Хорошая новость: это самая быстрая фаза роста. Первые 3 недели автоматизируем счёт и чтение диапазонов.',f:['math','ranges']};
-  else a={n:'Универсал в развитии',d:'Ровный профиль без провалов и без явных козырей. Растём через самые слабые оси, по одной за раз, с еженедельной проверкой.',f:[]};
+  if(tech>=.7&&read<.55)a={n:'Знаешь как, но не видишь соперника',d:'Ты хорошо знаешь, как играть «правильно», но мало думаешь о том, против кого играешь. Главный рост — в Школе (модули «Что у соперника» и «Соперники») и в разделе «Раздачи».'};
+  else if(read>=.7&&tech<.55)a={n:'Чувствуешь людей, но не хватает базы',d:'Ты хорошо видишь соперников, но решения иногда держатся на ощущениях. Подтяни префлоп и игру после флопа, и твоё чтение людей начнёт приносить деньги.'};
+  else if(tech>=.7&&read>=.7&&head<.6)a={n:'Играешь хорошо, но голова подводит',d:'Покерные навыки хорошие, но деньги чаще всего теряются в тилте и на длинных сессиях. Начни с раздела «Голова».'};
+  else if(tech>=.7&&read>=.7)a={n:'Готов к следующему шагу',d:'Сильная база. Дальше расти через разбор своих раздач с AI-тренером и сложные споты в тренажёре.'};
+  else if(tech<.5&&read<.5)a={n:'Строим фундамент',d:'Опыт есть, но многие решения принимаются по привычке. Это самая быстрая фаза роста: пройди Школу по порядку и играй по 1–2 раздачи в день в разделе «Раздачи». Через 3–4 недели повтори проверку.'};
+  else a={n:'Ровная игра без провалов',d:'Нет явных дыр и явных козырей. Растём по одной теме за раз, начиная с самой слабой.'};
   if(cal!=null){
-    if(cal>.12)a.cal='Ты переоцениваешь себя: уверенность выше точности на '+pct(cal)+' п.п. За столом это выглядит как «я был уверен, что он блефует». Лечится привычкой проговаривать альтернативы перед решением.';
-    else if(cal<-.12)a.cal='Ты недооцениваешь себя: точность выше уверенности на '+pct(-cal)+' п.п. За столом это пассивность и лишние фолды в пограничных спотах. Доверяй расчёту.';
-    else a.cal='Калибровка хорошая: твоя уверенность совпадает с реальной точностью. Это редкое и ценное качество.';
+    if(cal>.12)a.cal='Ты часто уверен больше, чем стоит: уверенность выше точности на '+pct(cal)+'%. За столом это звучит как «я был уверен, что он блефует». Перед важным решением спроси себя: «А какие ещё руки у него могут быть?»';
+    else if(cal<-.12)a.cal='Ты знаешь больше, чем думаешь: точность выше уверенности на '+pct(-cal)+'%. Доверяй своим расчётам и реже сбрасывай в пограничных ситуациях.';
+    else a.cal='Твоя уверенность совпадает с реальной точностью. Это редкое и полезное качество.';
   }
   return a;
 }
 function renderHome(){
   const a=archetype();const st=streak();const due=dueQs().length;
-  const totalAns=Object.values(S.stats).reduce((s,x)=>s+x.t,0);
-  const totalOk=Object.values(S.stats).reduce((s,x)=>s+x.c,0);
-  const weak=weakestAxes();
+  const ld=LESSONS.filter(l=>lessonDone(l.id)).length,hd=HANDS.filter(h=>S.hands&&S.hands[h.id]).length;
+  const nx=nextLesson();const nh=HANDS.find(h=>!(S.hands&&S.hands[h.id]));
   const routine=[
-    {k:'speed',t:'Разминка: счёт на скорость',s:'15 задач, 12 секунд на каждую. Математика должна стать рефлексом.',go:'speed'},
-    {k:'drill',t:'Смарт-микс: 12 спотов',s:due?`В очереди повторения ${due} ошибок — они пойдут первыми.`:'Подбор по твоим слабым осям.',go:'train'},
-    {k:'range',t:'Один диапазон руками',s:'Нарисуй диапазон из памяти, сверься с эталоном.',go:'ranges'},
-    {k:'pre',t:'Ритуал перед игрой',s:'Чек-лист готовности: 2 минуты, отсекает C-game на входе.',go:'mental'},
-    {k:'journal',t:'Разбор после сессии',s:'A/B/C-game, тилт, одна раздача на разбор.',go:'mental'},
+    {k:'lesson',t:'Один урок в Школе',s:nx?`Следующий: «${nx.t}». 5–7 минут.`:'Все уроки пройдены — повтори любой на выбор.',go:'school'},
+    {k:'hand',t:'Сыграй 1–2 раздачи',s:nh?`Следующая: «${nh.title}».`:'Все раздачи сыграны — сыграй заново те, где ошибался.',go:'hands'},
+    {k:'drill',t:'10 ситуаций в тренажёре',s:due?`Сначала пойдут ${due} твоих прошлых ошибок.`:'Понятные ситуации по твоим слабым темам.',go:'train'},
+    {k:'pre',t:'Перед игрой: чек-лист',s:'2 минуты. Отсекает игру на эмоциях.',go:'mental'},
+    {k:'journal',t:'После игры: короткая запись',s:'Как играл, что выбило из колеи, одна раздача на разбор.',go:'mental'},
   ];
   const nDone=routine.filter(r=>doneToday(r.k)).length;
-  let html=`<div class="hero">
-    <span class="eyebrow">Тренерский штаб</span>
-    <h1>${S.diag?'Сегодняшняя тренировка':'Сначала узнаем, где ты теряешь деньги'}</h1>
-    <p>${S.diag?'Каждый день одна и та же структура: разминка, споты по слабым местам, работа с диапазонами, ритуал до игры и разбор после. Профиль обновляется с каждым ответом.':'Я не даю программу вслепую. 24 спота по шести осям мастерства, плюс проверка того, насколько точно ты оцениваешь собственную уверенность. По итогам получишь профиль, тип игрока и план на 8 недель.'}</p>
-    ${S.diag?'':`<div class="row" style="margin-top:6px"><button class="btn primary" data-go="diag">Пройти диагностику · ~15 минут</button><span class="faint" style="font-size:13px">Без спешки. Отвечай так, как сыграл бы за столом.</span></div>`}
-  </div>`;
-  if(S.diag){
-    html+=`<div class="panel stack"><div class="row" style="justify-content:space-between"><h2>Ежедневная программа</h2><span class="pill ${nDone===routine.length?'good':'brass'}">${nDone} из ${routine.length}</span></div>
-      <div>${routine.map(r=>{const d=doneToday(r.k);return `<div class="check ${d?'done':''}"><input type="checkbox" id="rt-${r.k}" ${d?'checked':''} data-act="routine" data-k="${r.k}"><label for="rt-${r.k}"><span>${esc(r.t)}</span><br><span class="sub">${esc(r.s)}</span></label><button class="btn small" data-go="${r.go}">Открыть</button></div>`}).join('')}</div></div>`;
-  }
-  html+=`<div class="grid3">
+  let html=`<div class="hero"><span class="eyebrow">Твой покерный тренер</span>
+    <h1>${ld||hd?'Тренировка на сегодня':'Начни с простого'}</h1>
+    <p>Здесь нет лишней теории. Короткие уроки с живыми примерами, раздачи, которые ты играешь сам от префлопа до ривера, и споты на закрепление. Незнакомое слово подчёркнуто пунктиром — нажми на него, и появится объяснение.</p>
+    <div class="row" style="margin-top:6px">${nx?`<button class="btn primary" data-act="sc-open" data-id="${nx.id}">${ld?'Продолжить урок':'Первый урок'}: ${esc(nx.t)}</button>`:''}${nh?`<button class="btn" data-act="hp-open" data-id="${nh.id}">Сыграть раздачу</button>`:''}</div>
+  </div>
+  <div class="panel stack"><div class="row" style="justify-content:space-between"><h2>Каждый день, 30–40 минут</h2><span class="pill ${nDone===routine.length?'good':'brass'}">${nDone} из ${routine.length}</span></div>
+    <div>${routine.map(r=>{const d=doneToday(r.k);return `<div class="check ${d?'done':''}"><input type="checkbox" id="rt-${r.k}" ${d?'checked':''} data-act="routine" data-k="${r.k}"><label for="rt-${r.k}"><span>${esc(r.t)}</span><br><span class="sub">${esc(r.s)}</span></label><button class="btn small" data-go="${r.go}">Открыть</button></div>`}).join('')}</div>
+    <p class="faint" style="font-size:13px">Пункты отмечаются сами, когда ты проходишь урок, раздачу или споты. Можно отметить и вручную.</p></div>
+  <div class="grid3">
+    <div class="panel tight stat"><span class="v">${ld}/${LESSONS.length}</span><span class="l">уроков пройдено</span></div>
+    <div class="panel tight stat"><span class="v">${hd}/${HANDS.length}</span><span class="l">раздач сыграно</span></div>
     <div class="panel tight stat"><span class="v">${st}</span><span class="l">дней подряд</span></div>
-    <div class="panel tight stat"><span class="v">${totalAns?pct(totalOk/totalAns)+'%':'—'}</span><span class="l">точность в тренажёре · ${totalAns} ответов</span></div>
-    <div class="panel tight stat"><span class="v">${due}</span><span class="l">ошибок ждут повторения</span></div>
   </div>`;
   if(S.diag){
     const now={},first={};AXES.forEach(x=>{now[x.id]=axisScore(x.id)??0});
     const f0=S.diagHistory[0]||S.diag;AXES.forEach(x=>{first[x.id]=f0.axes[x.id]?f0.axes[x.id].score:0});
+    const weak=weakestAxes();
     html+=`<div class="grid2">
-      <div class="panel stack"><div class="stack-s"><span class="eyebrow">Профиль навыков</span><h2>Где ты сейчас</h2></div>
+      <div class="panel stack"><div class="stack-s"><span class="eyebrow">Твои сильные и слабые стороны</span><h2>Где ты сейчас</h2></div>
         ${radar([{vals:first,fill:'none',stroke:'var(--faint)',dash:true},{vals:now,fill:'rgba(217,173,85,.22)',stroke:'var(--brass)'}])}
-        <div class="legend"><span><i style="background:var(--brass)"></i>сейчас (диагностика + тренажёр)</span><span><i style="background:transparent;box-shadow:inset 0 0 0 1.5px var(--faint)"></i>первая диагностика</span></div>
+        <div class="legend"><span><i style="background:var(--brass)"></i>сейчас</span><span><i style="background:transparent;box-shadow:inset 0 0 0 1.5px var(--faint)"></i>первая проверка</span></div>
       </div>
       <div class="stack">
-        ${a?`<div class="archetype stack-s"><span class="eyebrow">Твой тип сейчас</span><h2>${esc(a.n)}</h2><p>${esc(a.d)}</p>${a.cal?`<p class="muted" style="font-size:14px">${esc(a.cal)}</p>`:''}</div>`:''}
-        <div class="panel stack-s"><h3>Приоритет на эту неделю</h3>
+        ${a?`<div class="archetype stack-s"><span class="eyebrow">Твой профиль</span><h2>${esc(a.n)}</h2><p>${esc(a.d)}</p>${a.cal?`<p class="muted" style="font-size:14px">${esc(a.cal)}</p>`:''}</div>`:''}
+        <div class="panel stack-s"><h3>Над чем работать сейчас</h3>
           ${weak.slice(0,2).map((w,i)=>`<div class="row" style="justify-content:space-between"><span><b>${i+1}. ${esc(AXIS[w.id].name)}</b><br><span class="muted" style="font-size:13px">${esc(AXIS[w.id].desc)}</span></span><button class="btn small" data-act="train-cat" data-cat="${w.id}">Тренировать</button></div>`).join('<hr class="divider">')}
         </div>
       </div>
     </div>`;
-    // trend
-    const byDay={};S.log.filter(e=>e.kind==='drill'||e.kind==='speed').forEach(e=>{const b=byDay[e.d]||(byDay[e.d]={c:0,t:0});b.c+=e.c;b.t+=e.t});
+    const byDay={};S.log.filter(e=>e.kind==='drill'||e.kind==='hand'||e.kind==='lesson').forEach(e=>{const b=byDay[e.d]||(byDay[e.d]={c:0,t:0});b.c+=e.c;b.t+=e.t});
     const pts=Object.keys(byDay).sort().slice(-21).map(d=>({l:fmtDate(d),v:byDay[d].t?byDay[d].c/byDay[d].t:0}));
-    html+=`<div class="panel stack"><div class="row" style="justify-content:space-between"><h2>Точность по дням</h2><span class="faint" style="font-size:13px">тренажёр и счёт, последние 3 недели</span></div>${lineChart(pts,{label:'Точность по дням'})}
-      <h3 style="margin-top:6px">Точность по осям в тренажёре</h3>${barsHTML(AXES.map(x=>{const s=S.stats[x.id];return{l:x.name,v:s&&s.t?s.c/s.t:null}}))}</div>`;
+    html+=`<div class="panel stack"><div class="row" style="justify-content:space-between"><h2>Правильных решений по дням</h2><span class="faint" style="font-size:13px">уроки, раздачи и тренажёр</span></div>${lineChart(pts,{label:'Точность по дням'})}</div>`;
   }else{
-    html+=`<div class="panel stack"><span class="eyebrow">Как устроен штаб</span><h2>Шесть осей мастерства</h2>
-      <div class="grid3">${AXES.map(x=>`<div class="stack-s"><h3>${esc(x.name)}</h3><p class="muted" style="font-size:14px">${esc(x.desc)}</p></div>`).join('')}</div>
-      <hr class="divider"><div class="grid3">
-        <div class="stack-s"><h3>Тренажёр с памятью</h3><p class="muted" style="font-size:14px">Ошибки возвращаются через 8 минут, потом через 1, 3, 7, 16 и 35 дней, пока не закрепятся.</p></div>
-        <div class="stack-s"><h3>AI-разбор раздач</h3><p class="muted" style="font-size:14px">Вставь свою раздачу и получи разбор по улицам с учётом твоего профиля. Генерация новых задач под твои слабые места.</p></div>
-        <div class="stack-s"><h3>Голова как навык</h3><p class="muted" style="font-size:14px">Профиль тилта, ритуалы до и после игры, журнал A/B/C-game.</p></div>
-      </div></div>
-      <div class="panel stack"><span class="eyebrow">Пример спота из тренажёра</span>${scenarioPreview()}</div>`;
+    html+=`<div class="panel row" style="justify-content:space-between"><span>Хочешь понять свой уровень? Короткая проверка: 12 вопросов, около 8 минут.</span><button class="btn small" data-go="diag">Пройти проверку</button></div>`;
   }
+  html+=`<div class="panel stack"><span class="eyebrow">Что внутри</span><div class="grid3">
+    <button class="lcard" data-go="school"><b>Школа</b><span class="muted" style="font-size:14px">${LESSONS.length} коротких уроков: префлоп, игра после флопа, что у соперника, стадии турнира.</span></button>
+    <button class="lcard" data-go="hands"><b>Раздачи</b><span class="muted" style="font-size:14px">${HANDS.length} раздач от префлопа до ривера с разбором каждой улицы.</span></button>
+    <button class="lcard" data-go="ranges"><b>Диапазоны</b><span class="muted" style="font-size:14px">Нарисуй по памяти, какие руки играть с каждого места, и сверься с образцом.</span></button>
+    <button class="lcard" data-go="players"><b>Соперники</b><span class="muted" style="font-size:14px">Четыре типа игроков и простой план против каждого.</span></button>
+    <button class="lcard" data-go="ai"><b>AI-тренер</b><span class="muted" style="font-size:14px">Вставь свою раздачу и получи разбор простыми словами.</span></button>
+    <button class="lcard" data-go="speed"><b>Простой счёт</b><span class="muted" style="font-size:14px">Минимум счёта, который нужен за столом. Без формул.</span></button>
+  </div></div>`;
   return html;
 }
 function scenarioPreview(){
   const q=BANK.find(x=>x.cat==='ranges'&&x.board&&x.hero)||BANK[0];if(!q)return '';
-  return `${tableHTML(q)}<p class="q-text">${tx(q.q)}</p><div class="opts">${q.opts.map((o,i)=>`<div class="opt" style="cursor:default"><span class="k">${'ABCD'[i]}</span><span>${tx(o)}</span></div>`).join('')}</div><p class="faint" style="font-size:13px">Ответ и разбор откроются в тренажёре после диагностики.</p>`;
+  return `${tableHTML(q)}<p class="q-text">${txg(q.q)}</p><div class="opts">${q.opts.map((o,i)=>`<div class="opt" style="cursor:default"><span class="k">${'ABCD'[i]}</span><span>${tx(o)}</span></div>`).join('')}</div><p class="faint" style="font-size:13px">Ответ и разбор откроются в тренажёре после диагностики.</p>`;
 }
 ACTS.routine=(el)=>{const k=el.dataset.k;if(el.checked){if(!doneToday(k)){logEvent(k,null,0,0);save()}}else{S.log=S.log.filter(e=>!(e.d===today()&&e.kind===k));save()}render()};
 ACTS['train-cat']=(el)=>{T.cat=el.dataset.cat;T.session=null;go('train')};
@@ -493,14 +525,15 @@ ACTS['train-cat']=(el)=>{T.cat=el.dataset.cat;T.session=null;go('train')};
 const D={phase:'intro',qs:[],i:0,ans:[],sel:null,conf:null,t0:0,profile:{}};
 function buildDiag(){
   const out=[];
+  const adv=S.prefs&&S.prefs.adv;const per=adv?4:2;
   AXES.forEach(ax=>{
-    const pool=BANK.filter(q=>q.cat===ax.id);
+    const pool=BANK.filter(q=>q.cat===ax.id&&(adv?!q.simple:q.simple));
     const by=l=>shuffle(pool.filter(q=>q.level===l));
-    let chosen=[...by(1).slice(0,1),...by(2).slice(0,2),...by(3).slice(0,1)];
-    if(chosen.length<4)chosen=chosen.concat(shuffle(pool.filter(q=>!chosen.includes(q))).slice(0,4-chosen.length));
+    let chosen=adv?[...by(1).slice(0,1),...by(2).slice(0,2),...by(3).slice(0,1)]:[...by(1).slice(0,1),...by(2).slice(0,1)];
+    if(chosen.length<per)chosen=chosen.concat(shuffle(pool.filter(q=>!chosen.includes(q))).slice(0,per-chosen.length));
     out.push(chosen);
   });
-  const res=[];for(let i=0;i<4;i++)shuffle(AXES.map((_,k)=>k)).forEach(k=>{if(out[k][i])res.push(out[k][i])});
+  const res=[];for(let i=0;i<per;i++)shuffle(AXES.map((_,k)=>k)).forEach(k=>{if(out[k][i])res.push(out[k][i])});
   return res;
 }
 const PROFILE_Q=[
@@ -513,19 +546,21 @@ const PROFILE_Q=[
 function renderDiag(){
   if(D.phase==='intro'){
     const p=S.profile||{};
-    return `<div class="hero"><span class="eyebrow">Входная диагностика</span><h1>24 спота, 6 осей, одна проверка честности</h1>
-      <p>Во время теста я не показываю правильные ответы, чтобы результат не искажался. После каждого ответа отметь уверенность: так мы измерим калибровку. Сильные игроки знают не только ответ, но и насколько они в нём уверены.</p></div>
-      ${S.diag?`<div class="panel row" style="justify-content:space-between"><span>Последняя диагностика: <b>${esc(fmtDate(S.diag.date))}</b>, итог <b>${pct(S.diag.total)}%</b>. Повторяй раз в 4 недели, чтобы видеть рост.</span><button class="btn small" data-act="diag-result">Открыть результат</button></div>`:''}
-      <div class="panel stack"><h2>Кто ты за столом</h2><p class="muted">Это нужно AI-тренеру и плану. Можно пропустить.</p>
+    const adv=S.prefs&&S.prefs.adv;
+    return `<div class="hero"><span class="eyebrow">Проверка уровня</span><h1>${adv?'24 сложных спота':'12 понятных вопросов'} по шести темам</h1>
+      <p>Во время проверки правильные ответы не показываются, чтобы результат был честным. После каждого ответа отметь, насколько ты уверен. Так видно, где ты точно знаешь, а где угадываешь.</p>
+      <div class="seg"><button aria-pressed="${!adv}" data-act="adv" data-v="0">Понятная версия</button><button aria-pressed="${!!adv}" data-act="adv" data-v="1">Сложная версия</button></div></div>
+      ${S.diag?`<div class="panel row" style="justify-content:space-between"><span>Последняя проверка: <b>${esc(fmtDate(S.diag.date))}</b>, итог <b>${pct(S.diag.total)}%</b>. Повторяй раз в 3–4 недели, чтобы видеть рост.</span><button class="btn small" data-act="diag-result">Открыть результат</button></div>`:''}
+      <div class="panel stack"><h2>Кто ты за столом</h2><p class="muted">Это нужно AI-тренеру. Можно пропустить.</p>
         ${PROFILE_Q.map(q=>`<div class="field"><span class="lbl">${esc(q.l)}</span><div class="seg">${q.o.map(o=>`<button aria-pressed="${p[q.k]===o}" data-act="prof" data-k="${q.k}" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div></div>`).join('')}
-        <div class="row"><button class="btn primary" data-act="diag-start">Начать диагностику</button><span class="faint" style="font-size:13px">${BANK.length} спотов в банке, в тест попадёт 24 случайных с балансом сложности.</span></div>
+        <div class="row"><button class="btn primary" data-act="diag-start">Начать проверку</button></div>
       </div>`;
   }
   if(D.phase==='q'){
     const q=D.qs[D.i];
-    return `<div class="row" style="justify-content:space-between"><span class="eyebrow">Диагностика · ${D.i+1} из ${D.qs.length}</span><span class="pill">${esc(LVL[q.level]||'')}</span></div>
+    return `<div class="row" style="justify-content:space-between"><span class="eyebrow">Проверка · ${D.i+1} из ${D.qs.length}</span><span class="pill">${esc(LVL[q.level]||'')}</span></div>
       <div class="progress"><i style="width:${pct(D.i/D.qs.length)}%"></i></div>
-      <div class="panel stack">${tableHTML(q)}<p class="q-text">${tx(q.q)}</p>
+      <div class="panel stack">${tableHTML(q)}<p class="q-text">${txg(q.q)}</p>
         <div class="opts">${q.opts.map((o,i)=>`<button class="opt ${D.sel===i?'sel':''}" data-act="diag-sel" data-i="${i}"><span class="k">${'ABCD'[i]}</span><span>${tx(o)}</span></button>`).join('')}</div>
         <div class="stack-s"><span class="lbl muted" style="font-size:13px;font-weight:600">Насколько ты уверен?</span>
           <div class="conf">${[[.4,'Угадываю'],[.6,'Скорее да'],[.8,'Уверен'],[.95,'Точно знаю']].map(([v,l])=>`<button aria-pressed="${D.conf===v}" data-act="diag-conf" data-v="${v}">${l}</button>`).join('')}</div></div>
@@ -534,10 +569,12 @@ function renderDiag(){
   }
   return renderDiagResult();
 }
+ACTS.adv=(el)=>{S.prefs=S.prefs||{};S.prefs.adv=el.dataset.v==='1';save();T.session=null;render()};
 ACTS.prof=(el)=>{S.profile=S.profile||{};const k=el.dataset.k,v=el.dataset.v;S.profile[k]=S.profile[k]===v?undefined:v;save();render()};
 ACTS['diag-start']=()=>{D.qs=buildDiag();D.i=0;D.ans=[];D.sel=null;D.conf=null;D.t0=Date.now();D.phase='q';render()};
 ACTS['diag-sel']=(el)=>{D.sel=+el.dataset.i;render()};
 ACTS['diag-conf']=(el)=>{D.conf=+el.dataset.v;render()};
+ACTS['diag-intro']=()=>{D.phase='intro';render()};
 ACTS['diag-result']=()=>{D.phase='result';render()};
 ACTS['diag-next']=()=>{
   if(D.sel==null||D.conf==null)return;
@@ -569,31 +606,31 @@ function renderDiagResult(){
   const buckets=[.4,.6,.8,.95].map(c=>{const xs=r.answers.filter(x=>x.conf===c);return{c,n:xs.length,acc:xs.length?xs.filter(x=>x.ok).length/xs.length:null}});
   const avgMs=r.answers.reduce((s,x)=>s+x.ms,0)/r.answers.length;
   const weak=AXES.slice().sort((x,y)=>vals[x.id]-vals[y.id]);
-  return `<div class="hero"><span class="eyebrow">Результат диагностики · ${esc(fmtDate(r.date))}</span>
-      <div class="row" style="align-items:flex-end;gap:18px"><span class="big-num">${pct(r.total)}%</span><span class="muted" style="padding-bottom:8px">взвешенный балл (сложные споты весят больше) · ${r.answers.filter(x=>x.ok).length}/${r.answers.length} верно · ~${Math.round(avgMs/1000)} с на спот</span></div></div>
+  return `<div class="hero"><span class="eyebrow">Результат проверки · ${esc(fmtDate(r.date))}</span>
+      <div class="row" style="align-items:flex-end;gap:18px"><span class="big-num">${pct(r.total)}%</span><span class="muted" style="padding-bottom:8px">${r.answers.filter(x=>x.ok).length} из ${r.answers.length} верно · трудные вопросы весят больше</span></div></div>
     <div class="grid2">
       <div class="panel stack">${radar(series)}${prev?`<div class="legend"><span><i style="background:var(--brass)"></i>сейчас</span><span><i style="background:transparent;box-shadow:inset 0 0 0 1.5px var(--faint)"></i>прошлая диагностика</span></div>`:''}
         ${barsHTML(AXES.map(x=>({l:x.name,v:vals[x.id]})))}</div>
       <div class="stack">
-        ${a?`<div class="archetype stack-s"><span class="eyebrow">Тип игрока</span><h2>${esc(a.n)}</h2><p>${esc(a.d)}</p></div>`:''}
-        <div class="panel stack-s"><h3>Калибровка уверенности</h3><p class="muted" style="font-size:14px">${esc(a&&a.cal||'')}</p>
+        ${a?`<div class="archetype stack-s"><span class="eyebrow">Твой профиль</span><h2>${esc(a.n)}</h2><p>${esc(a.d)}</p></div>`:''}
+        <div class="panel stack-s"><h3>Насколько ты уверен в ответах</h3><p class="muted" style="font-size:14px">${esc(a&&a.cal||'')}</p>
           <table class="mini"><thead><tr><th>Твоя уверенность</th><th>Ответов</th><th>Реально верно</th></tr></thead><tbody>
           ${buckets.map(b=>`<tr><td>${pct(b.c)}%</td><td class="mono">${b.n}</td><td class="mono" style="color:${b.acc==null?'var(--faint)':Math.abs(b.acc-b.c)<=.15?'var(--good)':'var(--warn)'}">${b.acc==null?'—':pct(b.acc)+'%'}</td></tr>`).join('')}
           </tbody></table></div>
-        <div class="panel stack-s"><h3>Тренерское предписание</h3>
-          <p>Первые две недели плана перестроены под оси <b>${esc(weak[0].name)}</b> и <b>${esc(weak[1].name)}</b>. Все ${r.answers.filter(x=>!x.ok).length} ошибок уже в очереди повторения.</p>
+        <div class="panel stack-s"><h3>Что делать дальше</h3>
+          <p>Больше всего пользы сейчас дадут темы <b>${esc(weak[0].name)}</b> и <b>${esc(weak[1].name)}</b>. Все ${r.answers.filter(x=>!x.ok).length} ошибок вернутся к тебе в тренажёре, пока не закрепятся.</p>
           <div class="row" style="margin-top:6px"><button class="btn primary" data-act="train-cat" data-cat="${weak[0].id}">Тренировать: ${esc(weak[0].name)}</button><button class="btn" data-go="plan">Открыть план</button></div></div>
       </div>
     </div>
-    <div class="panel stack"><div class="row" style="justify-content:space-between"><h2>Разбор каждого ответа</h2><button class="btn small" data-act="diag-start">Пройти заново</button></div>
-      ${r.answers.map((x,i)=>{const q=qById(x.id);if(!q)return '';return `<details class="week"><summary><span class="row" style="gap:8px;min-width:0"><span class="pill ${x.ok?'good':'bad'}">${x.ok?'верно':'ошибка'}</span><span class="faint" style="font-size:13px">${esc(AXIS[q.cat].name)}</span></span><span class="faint mono" style="font-size:12px">#${i+1} · ${pct(x.conf)}%</span></summary><div class="wb stack">${tableHTML(q)}<p class="q-text">${tx(q.q)}</p><div class="opts">${q.opts.map((o,k)=>`<div class="opt ${k===q.ans?'right':k===x.sel?'wrong':''}"><span class="k">${'ABCD'[k]}</span><span>${tx(o)}</span></div>`).join('')}</div><div class="why">${tx(q.why)}</div></div></details>`}).join('')}
+    <div class="panel stack"><div class="row" style="justify-content:space-between"><h2>Разбор каждого ответа</h2><button class="btn small" data-act="diag-intro">Пройти заново</button></div>
+      ${r.answers.map((x,i)=>{const q=qById(x.id);if(!q)return '';return `<details class="week"><summary><span class="row" style="gap:8px;min-width:0"><span class="pill ${x.ok?'good':'bad'}">${x.ok?'верно':'ошибка'}</span><span class="faint" style="font-size:13px">${esc(AXIS[q.cat].name)}</span></span><span class="faint mono" style="font-size:12px">#${i+1} · ${pct(x.conf)}%</span></summary><div class="wb stack">${tableHTML(q)}<p class="q-text">${txg(q.q)}</p><div class="opts">${q.opts.map((o,k)=>`<div class="opt ${k===q.ans?'right':k===x.sel?'wrong':''}"><span class="k">${'ABCD'[k]}</span><span>${tx(o)}</span></div>`).join('')}</div><div class="why">${txg(q.why)}</div></div></details>`}).join('')}
     </div>`;
 }
 
 /* ============================== TRAINER ============================== */
 const T={cat:'smart',session:null};
 function buildSession(cat,n){
-  n=n||12;const all=allQs();const now=Date.now();
+  n=n||10;const all=poolQs();const now=Date.now();
   let pool=cat==='smart'?all:cat==='review'?dueQs():all.filter(q=>q.cat===cat);
   const due=shuffle(pool.filter(q=>S.srs[q.id]&&S.srs[q.id].due<=now));
   const fresh=shuffle(pool.filter(q=>!S.srs[q.id]));
@@ -612,26 +649,30 @@ function renderTrain(){
   const s=T.session;
   if(!s){
     const due=dueQs().length;
-    const cnt=id=>allQs().filter(q=>q.cat===id).length;
-    return `<div class="hero"><span class="eyebrow">Тренажёр</span><h1>Споты с разбором мышления</h1><p>Каждый ответ сопровождается объяснением процесса: что учесть, в каком порядке думать, почему альтернативы хуже. Ошибки возвращаются по интервалам, пока не закрепятся.</p></div>
+    const cnt=id=>poolQs().filter(q=>q.cat===id).length;
+    const adv=S.prefs&&S.prefs.adv;
+    return `<div class="hero"><span class="eyebrow">Тренажёр</span><h1>Короткие ситуации на закрепление</h1><p>Одна ситуация — одно решение. После ответа — объяснение простыми словами и правило, которое стоит запомнить. Ошибки возвращаются через несколько минут, потом через день, три дня и неделю, пока не закрепятся.</p>
+      <div class="seg"><button aria-pressed="${!adv}" data-act="adv" data-v="0">Понятные споты</button><button aria-pressed="${!!adv}" data-act="adv" data-v="1">Все, включая сложные</button></div></div>
       <div class="grid3">
-        <button class="panel stack-s" style="text-align:left" data-act="t-start" data-cat="smart"><span class="eyebrow">Рекомендую</span><h3>Смарт-микс</h3><span class="muted" style="font-size:14px">12 спотов. Сначала повторение ошибок, затем новые с упором на слабые оси.</span></button>
-        <button class="panel stack-s" style="text-align:left" data-act="t-start" data-cat="review" ${due?'':'disabled'}><span class="eyebrow">${due} в очереди</span><h3>Работа над ошибками</h3><span class="muted" style="font-size:14px">Только споты, где ты ошибался и пришло время повторить.</span></button>
-        ${AXES.map(a=>{const sc=axisScore(a.id);return `<button class="panel stack-s" style="text-align:left" data-act="t-start" data-cat="${a.id}"><span class="row" style="justify-content:space-between"><span class="eyebrow">${cnt(a.id)} спотов</span>${sc!=null?`<span class="pill ${sc>=.75?'good':sc>=.55?'warn':'bad'}">${pct(sc)}%</span>`:''}</span><h3>${esc(a.name)}</h3><span class="muted" style="font-size:14px">${esc(a.desc)}</span></button>`}).join('')}
+        <button class="panel stack-s" style="text-align:left" data-act="t-start" data-cat="smart"><span class="eyebrow">Рекомендую</span><h3>Микс по слабым темам</h3><span class="muted" style="font-size:14px">10 ситуаций. Сначала твои прошлые ошибки, потом новые — больше по темам, где ты слабее.</span></button>
+        <button class="panel stack-s" style="text-align:left" data-act="t-start" data-cat="review" ${due?'':'disabled'}><span class="eyebrow">${due} в очереди</span><h3>Работа над ошибками</h3><span class="muted" style="font-size:14px">Только ситуации, где ты ошибался и пришло время повторить.</span></button>
+        ${AXES.map(a=>{const sc=axisScore(a.id);return `<button class="panel stack-s" style="text-align:left" data-act="t-start" data-cat="${a.id}"><span class="row" style="justify-content:space-between"><span class="eyebrow">${cnt(a.id)} ситуаций</span>${sc!=null?`<span class="pill ${sc>=.75?'good':sc>=.55?'warn':'bad'}">${pct(sc)}%</span>`:''}</span><h3>${esc(a.name)}</h3><span class="muted" style="font-size:14px">${esc(a.desc)}</span></button>`}).join('')}
+        <button class="panel stack-s" style="text-align:left" data-go="speed"><span class="eyebrow">2 минуты</span><h3>Простой счёт</h3><span class="muted" style="font-size:14px">Хватает ли шансов для колла с дро. Без формул.</span></button>
+        <button class="panel stack-s" style="text-align:left" data-go="diag"><span class="eyebrow">${S.diag?'раз в 3–4 недели':'8 минут'}</span><h3>Проверка уровня</h3><span class="muted" style="font-size:14px">${S.diag?'Повтори и сравни с прошлым разом.':'Узнай свои сильные и слабые темы.'}</span></button>
       </div>`;
   }
   if(s.done){
     const acc=s.qs.length?s.c/s.qs.length:0;
-    return `<div class="hero"><span class="eyebrow">Сессия завершена</span><div class="row" style="align-items:flex-end;gap:18px"><span class="big-num">${s.c}/${s.qs.length}</span><span class="muted" style="padding-bottom:8px">${acc>=.8?'Сильно. Следующая сессия пойдёт сложнее за счёт новых спотов.':acc>=.6?'Нормально. Ошибки вернутся к тебе через 8 минут и завтра.':'Здесь есть работа. Перечитай разборы ниже: важен ход мысли, а не ответ.'}</span></div></div>
-      <div class="row"><button class="btn primary" data-act="t-start" data-cat="${s.cat}">Ещё 12 спотов</button><button class="btn" data-act="t-menu">К выбору режима</button>${sampleFn?`<button class="btn" data-act="ai-gen-from" data-cat="${s.cat==='smart'||s.cat==='review'?weakestAxes()[0].id:s.cat}">Сгенерировать новые споты с AI</button>`:''}</div>
-      <div class="panel stack"><h2>Ошибки этой сессии</h2>${s.res.filter(r=>!r.ok).length?s.res.filter(r=>!r.ok).map(r=>{const q=qById(r.id);return q?`<div class="stack-s"><p><b>${esc(AXIS[q.cat]?.name||'')}</b> · <span class="muted">${esc(q.tag||'')}</span></p><p class="muted" style="font-size:14px">${tx(q.q.slice(0,180))}${q.q.length>180?'…':''}</p><div class="why">${tx(q.why)}</div></div>`:''}).join('<hr class="divider">'):'<p class="muted">Ни одной ошибки.</p>'}</div>`;
+    return `<div class="hero"><span class="eyebrow">Сессия завершена</span><div class="row" style="align-items:flex-end;gap:18px"><span class="big-num">${s.c}/${s.qs.length}</span><span class="muted" style="padding-bottom:8px">${acc>=.8?'Отлично.':acc>=.6?'Хорошо. Ошибки вернутся к тебе через несколько минут и завтра.':'Есть над чем поработать. Перечитай объяснения ниже — важна логика, а не ответ.'}</span></div></div>
+      <div class="row"><button class="btn primary" data-act="t-start" data-cat="${s.cat}">Ещё 10 ситуаций</button><button class="btn" data-act="t-menu">К выбору режима</button>${sampleFn?`<button class="btn" data-act="ai-gen-from" data-cat="${s.cat==='smart'||s.cat==='review'?weakestAxes()[0].id:s.cat}">Новые ситуации от AI-тренера</button>`:''}</div>
+      <div class="panel stack"><h2>Ошибки этой сессии</h2>${s.res.filter(r=>!r.ok).length?s.res.filter(r=>!r.ok).map(r=>{const q=qById(r.id);return q?`<div class="stack-s"><p><b>${esc(AXIS[q.cat]?.name||'')}</b> · <span class="muted">${esc(q.tag||'')}</span></p><p class="muted" style="font-size:14px">${txg(q.q.slice(0,180))}${q.q.length>180?'…':''}</p><div class="why">${txg(q.why)}</div></div>`:''}).join('<hr class="divider">'):'<p class="muted">Ни одной ошибки.</p>'}</div>`;
   }
   const q=s.qs[s.i];const answered=s.sel!=null;
-  return `<div class="row" style="justify-content:space-between"><span class="eyebrow">${esc(s.cat==='smart'?'Смарт-микс':s.cat==='review'?'Работа над ошибками':AXIS[s.cat].name)} · ${s.i+1} из ${s.qs.length}</span><span class="row" style="gap:6px"><span class="pill">${esc(AXIS[q.cat]?.name||'')}</span><span class="pill">${esc(LVL[q.level]||'')}</span>${q.ai?'<span class="pill brass">AI</span>':''}${S.srs[q.id]&&S.srs[q.id].wrong?'<span class="pill warn">повтор</span>':''}</span></div>
+  return `<div class="row" style="justify-content:space-between"><span class="eyebrow">${esc(s.cat==='smart'?'Микс':s.cat==='review'?'Работа над ошибками':AXIS[s.cat].name)} · ${s.i+1} из ${s.qs.length}</span><span class="row" style="gap:6px"><span class="pill">${esc(AXIS[q.cat]?.name||'')}</span><span class="pill">${esc(LVL[q.level]||'')}</span>${q.ai?'<span class="pill brass">AI</span>':''}${S.srs[q.id]&&S.srs[q.id].wrong?'<span class="pill warn">повтор</span>':''}</span></div>
     <div class="progress"><i style="width:${pct(s.i/s.qs.length)}%"></i></div>
-    <div class="panel stack">${tableHTML(q)}<p class="q-text">${tx(q.q)}</p>
+    <div class="panel stack">${tableHTML(q)}<p class="q-text">${txg(q.q)}</p>
       <div class="opts">${q.opts.map((o,i)=>{let c='';if(answered){if(i===q.ans)c='right';else if(i===s.sel)c='wrong'}return `<button class="opt ${c}" data-act="t-ans" data-i="${i}" ${answered?'disabled':''}><span class="k">${'ABCD'[i]}</span><span>${tx(o)}</span></button>`}).join('')}</div>
-      ${answered?`<div class="why ${s.sel===q.ans?'good':'bad'}"><b>${s.sel===q.ans?'Верно.':'Неверно.'}</b> ${tx(q.why)}${q.tag?`<div class="faint" style="font-size:12.5px;margin-top:6px">Навык: ${esc(q.tag)}</div>`:''}</div>
+      ${answered?`<div class="why ${s.sel===q.ans?'good':'bad'}"><b>${s.sel===q.ans?'Верно.':'Неверно.'}</b> ${txg(q.why)}</div>${q.rule?`<div class="rule"><span class="eyebrow">Правило</span><p>${txg(q.rule)}</p></div>`:''}
         <div class="row"><button class="btn primary" data-act="t-next">${s.i===s.qs.length-1?'Итоги':'Следующий спот'}</button>${sampleFn?`<button class="btn small" data-act="t-ask">Спросить тренера про этот спот</button>`:''}</div><div id="t-ai"></div>`:''}
     </div>`;
 }
@@ -642,7 +683,7 @@ ACTS['t-next']=()=>{const s=T.session;s.i++;s.sel=null;if(s.i>=s.qs.length){s.do
 ACTS['t-ask']=async(el)=>{
   const s=T.session;const q=s.qs[s.i];const box=$('#t-ai');if(!box||!sampleFn)return;
   el.disabled=true;box.innerHTML=`<div class="panel tight ai-out">Тренер думает…</div>`;
-  const prompt=COACH_RULES+`\n\nУченик только что решал спот из тренажёра и выбрал вариант «${q.opts[s.sel]}». Правильный ответ по ключу: «${q.opts[q.ans]}».\n\nСпот: ${q.q}\nКарты героя: ${q.hero||'—'}; борд: ${q.board||'—'}; банк: ${q.pot??'—'} bb; эфф. стек: ${q.stack??'—'} bb; позиции: ${q.pos||'—'}.\nВарианты: ${q.opts.map((o,i)=>'ABCD'[i]+') '+o).join('; ')}\nРазбор из ключа: ${q.why}\n\nОбъясни глубже, чем ключ: (1) как сильный игрок раскладывает этот спот по шагам, (2) почему выбранный учеником вариант ${s.sel===q.ans?'верен и какая альтернатива ближе всего':'хуже и при каких условиях он стал бы верным'}, (3) одно общее правило, которое переносится на похожие споты. Если считаешь, что ключ спорный, скажи прямо и объясни. До 220 слов.`;
+  const prompt=COACH_RULES+`\n\nУченик только что решал спот из тренажёра и выбрал вариант «${q.opts[s.sel]}». Правильный ответ по ключу: «${q.opts[q.ans]}».\n\nСпот: ${q.q}\nКарты героя: ${q.hero||'—'}; борд: ${q.board||'—'}; банк: ${q.pot??'—'} bb; эфф. стек: ${q.stack??'—'} bb; позиции: ${q.pos||'—'}.\nВарианты: ${q.opts.map((o,i)=>'ABCD'[i]+') '+o).join('; ')}\nРазбор из ключа: ${q.why}\n\nОбъясни простыми словами: (1) как подумать об этой ситуации по шагам, (2) почему выбранный учеником вариант ${s.sel===q.ans?'верен':'хуже и когда он мог бы быть верным'}, (3) одно простое правило на будущее. Если считаешь, что ключ спорный, скажи прямо. До 180 слов.`;
   try{await sampleFn(prompt,{modelTier:'default',onText:({text})=>{box.innerHTML=`<div class="panel tight ai-out">${esc(text)}</div>`}})}
   catch(e){box.innerHTML=`<div class="panel tight muted">${esc(sampleErr(e))}</div>`}
   el.disabled=false;
@@ -665,14 +706,18 @@ function expand(tok){
 }
 const parseRange=str=>new Set(str.split(',').flatMap(expand));
 const RANGE_SPOTS=[
-  {id:'utg',t:'UTG: открытие (6-max, 100bb)',d:'Нарисуй руки, которыми открываешься с UTG. Самая тайтовая позиция: впереди пять игроков.',core:'66+,A9s+,A5s,KTs+,QTs+,JTs,AJo+,KQo',border:'22-55,A2s-A8s,K9s,Q9s,J9s,T9s,98s,87s,76s,65s,ATo,KJo',tip:'Рука из первой позиции должна выдерживать 3-бет и игру без позиции. Мелкие одномастные тузы A2s–A5s хороши как блокеры и для блефовых 4-бетов. Разномастные бродвеи ниже AJo/KQo проигрывают доминирующим рукам.'},
-  {id:'co',t:'CO: открытие (6-max, 100bb)',d:'Позади только BTN и блайнды. Диапазон заметно шире.',core:'44+,A2s+,K9s+,Q9s+,J9s+,T9s,98s,ATo+,KJo+,QJo',border:'22,33,K6s-K8s,Q8s,J8s,T8s,87s,76s,65s,54s,A8o,A9o,KTo,QTo,JTo',tip:'Все одномастные тузы входят в диапазон. Разномастные A8o–A9o, KTo и QTo пограничны: при тайтовом BTN и пассивных блайндах открывай их, против агрессивного 3-бетящего BTN выкидывай.'},
-  {id:'btn',t:'BTN: открытие (6-max, 100bb)',d:'Лучшая позиция за столом. Рисуй с поправкой на обычные (не экстремальные) блайнды.',core:'22+,A2s+,K5s+,Q8s+,J8s+,T8s+,97s+,87s,76s,65s,A7o+,A5o,KTo+,QTo+,JTo',border:'K2s-K4s,Q4s-Q7s,J6s,J7s,T6s,T7s,96s,86s,75s,64s,54s,43s,A2o-A4o,A6o,K8o,K9o,Q9o,J9o,T9o,98o',tip:'С BTN открывается 40–50% рук. Главная ошибка — открывать мусор вроде K4o и Q6o, который ничего не делает на постфлопе. Вторая ошибка — выкидывать одномастные коннекторы и любые пары.'},
-  {id:'bb3b',t:'BB: 3-бет против BTN-открытия 2.5bb',d:'Ты на BB, BTN открылся. Нарисуй руки, которые идут в 3-бет (не в колл).',core:'QQ+,AKs,AKo,A5s,A4s',border:'JJ,TT,99,AQs,AJs,ATs,AQo,AJo,KQs,KJs,KTs,QJs,A3s,A2s,K9s,Q9s,J9s,T9s,98s,87s,76s,65s,KQo,K5s,K6s,K7s,K8s',tip:'Против широкого BTN 3-бет из BB строится линейно-поляризованным: сильнейшие руки на вэлью плюс блокерные A5s–A4s и часть играбельных одномастных. Средние пары и одномастные бродвеи обычно играют и в колл, и в 3-бет, поэтому они пограничные.'},
-  {id:'4bet',t:'Регуляр CO: 4-бет против твоего 3-бета с BTN',d:'Типичный регуляр открылся с CO, ты сделал 3-бет с BTN, он поставил 4-бет (100bb). Нарисуй его диапазон 4-бета.',core:'KK+,AKs',border:'QQ,JJ,AKo,AQs,A5s,A4s,A3s,KQs',tip:'4-бет без позиции против BTN строится узко: вэлью QQ+/AK и немного блефов с блокером туза. Если у оппонента 4-бет больше 8–9%, он блефует слишком много: пушь шире. Если меньше 3%, это почти только QQ+/AK: выкидывай даже JJ и AQs.'},
-  {id:'sbbb',t:'SB: открытие против BB (100bb, рейз-или-фолд)',d:'Все сфолдили до тебя на SB. Стратегия без лимпов: рейз или фолд.',core:'22+,A2s+,K2s+,Q5s+,J7s+,T7s+,97s+,86s+,76s,65s,A5o+,K9o+,Q9o+,J9o+,T9o',border:'Q2s-Q4s,J4s-J6s,T5s,T6s,95s,96s,85s,75s,64s,54s,53s,43s,A2o-A4o,K5o-K8o,Q8o,J8o,T8o,98o,87o',tip:'Против одного игрока SB открывается широко, около 45–55%, но хуже BTN: ты будешь без позиции весь постфлоп. Против BB, который много 3-бетит, сужай диапазон до ~35% и убирай слабые разномастные руки.'},
+  {id:'mtt-early',b:'Турнир: ранние места',t:'Турнир: открытие с ранних мест (~40бб)',d:'Ты на UTG или MP, стек около 40бб. Какие руки открываешь, если до тебя все сбросили?',core:'77+,ATs+,KJs+,QJs,AJo+,KQo',border:'55,66,A5s,A9s,KTs,QTs,JTs,ATo',tip:'С первых мест за тобой ещё много игроков, поэтому играй только руки, которые выдерживают перерейз и хорошо играют после флопа. Разномастные KJ, QJ, KT отсюда — в пас.'},
+  {id:'mtt-btn',b:'Турнир: баттон',t:'Турнир: открытие с баттона (~40бб)',d:'Все сбросили до тебя на баттоне, стек около 40бб, есть анте.',core:'22+,A2s+,K8s+,Q9s+,J9s+,T9s,98s,87s,A8o+,KTo+,QTo+,JTo',border:'K5s-K7s,Q8s,J8s,T8s,76s,65s,A2o-A7o,K9o,Q9o,J9o',tip:'С баттона против тебя остались только блайнды, а после флопа ты ходишь последним. Отсюда открывается почти половина рук. Не выкидывай одномастные руки и любые пары.'},
+  {id:'push10',b:'Турнир: пуш 10бб',t:'Турнир: пуш с баттона при 10бб',d:'Все сбросили до тебя на баттоне. Стек 10бб, есть анте. С какими руками идёшь олл-ин?',core:'22+,A2s+,A2o+,K5s+,K9o+,Q8s+,QTo+,J8s+,JTo,T8s+,98s,87s,76s',border:'K2s-K4s,K5o-K8o,Q5s-Q7s,Q9o,J7s,J9o,T7s,T9o,97s,86s,65s,54s',tip:'При 10бб с баттона олл-ин идёт примерно с третью рук и даже шире. Блайнды часто сбрасывают, а если коллируют, у тебя всё равно есть шансы. Главная ошибка любителей — ждать слишком сильную руку, пока блайнды и анте съедают стек.'},
+
+  {id:'utg',b:'Кэш: UTG',t:'UTG: открытие (6-max, 100bb)',d:'Нарисуй руки, которыми открываешься с UTG. Самая тайтовая позиция: впереди пять игроков.',core:'66+,A9s+,A5s,KTs+,QTs+,JTs,AJo+,KQo',border:'22-55,A2s-A8s,K9s,Q9s,J9s,T9s,98s,87s,76s,65s,ATo,KJo',tip:'Рука из первой позиции должна выдерживать 3-бет и игру без позиции. Мелкие одномастные тузы A2s–A5s хороши как блокеры и для блефовых 4-бетов. Разномастные бродвеи ниже AJo/KQo проигрывают доминирующим рукам.'},
+  {id:'co',b:'Кэш: CO',t:'CO: открытие (6-max, 100bb)',d:'Позади только BTN и блайнды. Диапазон заметно шире.',core:'44+,A2s+,K9s+,Q9s+,J9s+,T9s,98s,ATo+,KJo+,QJo',border:'22,33,K6s-K8s,Q8s,J8s,T8s,87s,76s,65s,54s,A8o,A9o,KTo,QTo,JTo',tip:'Все одномастные тузы входят в диапазон. Разномастные A8o–A9o, KTo и QTo пограничны: при тайтовом BTN и пассивных блайндах открывай их, против агрессивного 3-бетящего BTN выкидывай.'},
+  {id:'btn',b:'Кэш: BTN',t:'BTN: открытие (6-max, 100bb)',d:'Лучшая позиция за столом. Рисуй с поправкой на обычные (не экстремальные) блайнды.',core:'22+,A2s+,K5s+,Q8s+,J8s+,T8s+,97s+,87s,76s,65s,A7o+,A5o,KTo+,QTo+,JTo',border:'K2s-K4s,Q4s-Q7s,J6s,J7s,T6s,T7s,96s,86s,75s,64s,54s,43s,A2o-A4o,A6o,K8o,K9o,Q9o,J9o,T9o,98o',tip:'С BTN открывается 40–50% рук. Главная ошибка — открывать мусор вроде K4o и Q6o, который ничего не делает на постфлопе. Вторая ошибка — выкидывать одномастные коннекторы и любые пары.'},
+  {id:'bb3b',b:'Кэш: 3-бет с BB',t:'BB: 3-бет против BTN-открытия 2.5bb',d:'Ты на BB, BTN открылся. Нарисуй руки, которые идут в 3-бет (не в колл).',core:'QQ+,AKs,AKo,A5s,A4s',border:'JJ,TT,99,AQs,AJs,ATs,AQo,AJo,KQs,KJs,KTs,QJs,A3s,A2s,K9s,Q9s,J9s,T9s,98s,87s,76s,65s,KQo,K5s,K6s,K7s,K8s',tip:'Против широкого BTN 3-бет из BB строится линейно-поляризованным: сильнейшие руки на вэлью плюс блокерные A5s–A4s и часть играбельных одномастных. Средние пары и одномастные бродвеи обычно играют и в колл, и в 3-бет, поэтому они пограничные.'},
+  {id:'4bet',b:'Кэш: 4-бет регуляра',t:'Регуляр CO: 4-бет против твоего 3-бета с BTN',d:'Типичный регуляр открылся с CO, ты сделал 3-бет с BTN, он поставил 4-бет (100bb). Нарисуй его диапазон 4-бета.',core:'KK+,AKs',border:'QQ,JJ,AKo,AQs,A5s,A4s,A3s,KQs',tip:'4-бет без позиции против BTN строится узко: вэлью QQ+/AK и немного блефов с блокером туза. Если у оппонента 4-бет больше 8–9%, он блефует слишком много: пушь шире. Если меньше 3%, это почти только QQ+/AK: выкидывай даже JJ и AQs.'},
+  {id:'sbbb',b:'Кэш: SB против BB',t:'SB: открытие против BB (100bb, рейз-или-фолд)',d:'Все сфолдили до тебя на SB. Стратегия без лимпов: рейз или фолд.',core:'22+,A2s+,K2s+,Q5s+,J7s+,T7s+,97s+,86s+,76s,65s,A5o+,K9o+,Q9o+,J9o+,T9o',border:'Q2s-Q4s,J4s-J6s,T5s,T6s,95s,96s,85s,75s,64s,54s,53s,43s,A2o-A4o,K5o-K8o,Q8o,J8o,T8o,98o,87o',tip:'Против одного игрока SB открывается широко, около 45–55%, но хуже BTN: ты будешь без позиции весь постфлоп. Против BB, который много 3-бетит, сужай диапазон до ~35% и убирай слабые разномастные руки.'},
 ];
-const RG={spot:RANGE_SPOTS[0].id,sel:new Set(),checked:false,painting:null};
+const RG={spot:'mtt-early',sel:new Set(),checked:false,painting:null};
 function rangeSpot(){return RANGE_SPOTS.find(s=>s.id===RG.spot)}
 function scoreRange(spot,sel){
   const core=parseRange(spot.core),border=parseRange(spot.border);
@@ -693,20 +738,20 @@ function renderRanges(){
     return `<div class="${cls}" data-h="${h}">${h.length===2?h:h.slice(0,2)+(h[2]==='s'?'s':'')}</div>`};
   let grid='';for(let i=0;i<13;i++)for(let j=0;j<13;j++)grid+=cell(i,j);
   const best=S.rangeBest[sp.id];
-  return `<div class="hero"><span class="eyebrow">Диапазоны руками</span><h1>Нарисуй диапазон из головы</h1><p>Сильные игроки думают не руками, а диапазонами. Чтобы читать чужие диапазоны, нужно на автомате знать свои. Закрашивай клетки (зажми и веди), затем сверься с эталоном. Пограничные руки засчитываются в обе стороны.</p></div>
-    <div class="seg">${RANGE_SPOTS.map(s=>`<button aria-pressed="${s.id===RG.spot}" data-act="rg-spot" data-id="${s.id}">${esc(s.t.split(':')[0])}${S.rangeBest[s.id]!=null?` · ${pct(S.rangeBest[s.id])}%`:''}</button>`).join('')}</div>
+  return `<div class="hero"><span class="eyebrow">Диапазоны</span><h1>Какие руки играть: нарисуй по памяти</h1><p>Сначала нарисуй по памяти, какие руки ты играешь в этой ситуации: нажимай на клетки или веди пальцем. Потом нажми «Проверить» и сравни с образцом. Руки «по ситуации» засчитываются в обе стороны.</p></div>
+    <div class="seg">${RANGE_SPOTS.map(s=>`<button aria-pressed="${s.id===RG.spot}" data-act="rg-spot" data-id="${s.id}">${esc(s.b||s.t.split(':')[0])}${S.rangeBest[s.id]!=null?` · ${pct(S.rangeBest[s.id])}%`:''}</button>`).join('')}</div>
     <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))">
       <div class="panel stack">
-        <div class="stack-s"><h2>${esc(sp.t)}</h2><p class="muted">${esc(sp.d)}</p></div>
+        <div class="stack-s"><h2>${esc(sp.t)}</h2><p class="muted">${txg(sp.d)}</p></div>
         <div class="rg-wrap"><div class="rg" id="rg">${grid}</div></div>
         <div class="row" style="justify-content:space-between"><span class="mono">${selC} комбо · ${(selC/1326*100).toFixed(1)}% рук</span><span class="row"><button class="btn small" data-act="rg-clear">Очистить</button>${RG.checked?`<button class="btn small" data-act="rg-retry">Ещё раз</button>`:`<button class="btn primary small" data-act="rg-check">Проверить</button>`}</span></div>
       </div>
       <div class="stack">
         ${res?`<div class="panel stack-s"><span class="eyebrow">Результат</span><div class="row" style="align-items:flex-end;gap:12px"><span class="big-num">${pct(res.score)}%</span><span class="muted" style="padding-bottom:8px">лучший: ${best!=null?pct(best)+'%':'—'}</span></div>
-          <p class="muted" style="font-size:14px">Попал в ядро: ${res.hit} из ${res.coreTot} комбо. Пропущено: ${res.missed}. Лишнего: ${res.extra} комбо (минус к баллу).</p>
-          <div class="legend"><span><i style="background:var(--good)"></i>верно</span><span><i style="background:var(--warn)"></i>пограничная, ок</span><span><i style="background:var(--bad)"></i>лишняя</span><span><i style="box-shadow:inset 0 0 0 2px var(--info)"></i>пропущена</span><span><i style="box-shadow:inset 0 0 0 1.5px var(--warn)"></i>пограничная, можно было</span></div></div>
-          <div class="why">${esc(sp.tip)}</div>`:`<div class="panel stack-s"><h3>Как думать</h3><p class="muted" style="font-size:14px">Начни с ядра: пары, одномастные тузы, бродвеи. Потом спроси себя про каждую пограничную группу: что эта рука делает на постфлопе в этой позиции? Не подглядывай в чарты: цель — проверить, что живёт у тебя в голове.</p></div>`}
-        <div class="panel stack-s"><h3>Почему это важно</h3><p class="muted" style="font-size:14px">Эталоны — упрощённые солверные стратегии для онлайн-кэша 100bb с обычным рейком. Твой реальный диапазон должен сдвигаться под стол: тайтовые блайнды — шире, агрессивные 3-бетторы — уже. Но сдвигать можно только то, что знаешь.</p></div>
+          <p class="muted" style="font-size:14px">Ты отметил ${pct(res.hit/(res.coreTot||1))}% нужных рук. Лишние руки снижают балл.</p>
+          <div class="legend"><span><i style="background:var(--good)"></i>верно</span><span><i style="background:var(--warn)"></i>по ситуации, ок</span><span><i style="background:var(--bad)"></i>лишняя рука</span><span><i style="box-shadow:inset 0 0 0 2px var(--info)"></i>забыл</span><span><i style="box-shadow:inset 0 0 0 1.5px var(--warn)"></i>по ситуации, можно было</span></div></div>
+          <div class="why">${txg(sp.tip)}</div>`:`<div class="panel stack-s"><h3>С чего начать</h3><p class="muted" style="font-size:14px">Сначала отметь самое очевидное: большие пары и сильные тузы. Потом добавляй руки послабее и спрашивай себя: «Что эта рука будет делать после флопа с этого места?» Не подглядывай: цель — проверить, что у тебя в голове.</p></div>`}
+        <div class="panel stack-s"><h3>Как читать сетку</h3><p class="muted" style="font-size:14px">По диагонали — пары. Выше диагонали — одномастные руки (с буквой s), ниже — разномастные. Образцы упрощённые. Против тайтовых блайндов можно играть шире, против агрессивных — уже. Первые три кнопки — для турниров, остальные — для кэша на 100бб.</p></div>
       </div>
     </div>`;
 }
@@ -733,8 +778,11 @@ function numOpts(correct,cands,fmt){
   const sh=shuffle(opts);return{opts:sh.map(fmt),ans:sh.indexOf(correct)};
 }
 const P=x=>r1(x)+'%';
+const PS=x=>{const n=Math.round(1/x);return r1(x)+'% · 1 из '+n};
 const FRACS=[[.25,'25%'],[1/3,'33%'],[.5,'50%'],[2/3,'66%'],[.75,'75%'],[1,'100%'],[1.5,'150%'],[2,'200%']];
 function genMath(){
+  const adv=S.prefs&&S.prefs.adv;
+  if(!adv)return genSimple();
   const t=pick(['potodds','potodds','mdf','alpha','bluff','outs2','outs1','combo','combo','pairs']);
   const pot=pick([6,8,10,12,15,20,24,30,40,50,60,80,100]);
   if(t==='potodds'){const [f]=pick(FRACS);const b=Math.round(pot*f*10)/10;const eq=b/(pot+2*b);
@@ -757,24 +805,46 @@ function genMath(){
     const o=numOpts(corr,[6,3,1,4,2,12].filter(v=>v!==corr),v=>String(Math.round(v)));
     return{q:`${desc}Сколько комбинаций пары ${r}${r} возможно у оппонента?`,...o,why:`Осталось ${left} карт ${r}; число пар = C(${left},2) = ${corr}. Поэтому сет на флопе — всего 3 комбо, а оверпара без блокеров — 6.`,tag:'комбинаторика'}}
 }
+const SFR=[[1/3,'треть банка'],[.5,'полбанка'],[2/3,'2/3 банка'],[1,'размер банка']];
+const DRAWS=[[9,'флеш-дро'],[8,'двустороннее стрит-дро'],[4,'гатшот (стрит в середину)'],[15,'флеш-дро + стрит-дро']];
+function genSimple(){
+  const t=pick(['need','need','outs','outs','call','call','call']);
+  if(t==='need'){const [f,fl]=pick(SFR);const eq=f/(1+2*f);
+    const o=numOpts(eq,[f/(1+f),.5,eq*.5,eq*1.6],PS);
+    return{q:`Соперник ставит ${fl}. Как часто твой колл должен выигрывать, чтобы быть в плюс на дистанции?`,...o,why:`Ставка ${fl} → колл должен выигрывать примерно ${PS(eq)}. Запомни четыре точки: треть банка — 1 из 5, полбанка — 1 из 4, 2/3 — чуть реже 1 из 3, банк — 1 из 3.`,tag:'сколько нужно выигрывать'}}
+  if(t==='outs'){const [n,nm]=pick(DRAWS);const flop=Math.random()<.5;const eq=flop?1-((47-n)*(46-n))/(47*46):n/46;
+    const o=numOpts(eq,[n/100,eq*2,eq*.5,flop?n/46:1-((47-n)*(46-n))/(47*46)],PS);
+    return{q:`${flop?'Флоп, впереди ещё две карты (ты олл-ин)':'Тёрн, впереди одна карта'}. У тебя ${nm} — ${n} аутов. Какие примерно шансы собрать руку?`,...o,why:`${flop?`На флопе с олл-ином: ауты × 4 ≈ ${n*4}%, точнее ${P(eq)}.`:`На тёрне: ауты × 2 ≈ ${n*2}%, точнее ${P(eq)}.`} То есть примерно 1 раз из ${Math.round(1/eq)}.`,tag:'ауты'}}
+  const [n,nm]=pick(DRAWS.slice(0,3));const [f,fl]=pick(SFR);const street=pick(['turn','flopallin']);
+  const have=street==='turn'?n/46:1-((47-n)*(46-n))/(47*46);const need=f/(1+2*f);
+  if(Math.abs(have-need)<.03)return genSimple();
+  const yes=have>need;const opts=['Да, колл в плюс','Нет, шансов не хватает'];
+  return{q:`${street==='turn'?'Тёрн':'Флоп'}. У тебя ${nm} (${n} аутов). Соперник ставит ${fl}${street==='turn'?' и он уже олл-ин — больше денег с него не взять':' олл-ин, впереди тёрн и ривер'}. Хватает шансов для колла?`,opts,ans:yes?0:1,
+    why:`Нужно выигрывать ${PS(need)}. Шанс собрать: ${PS(have)}. ${yes?'Шансов хватает — колл.':'Шансов меньше, чем нужно, — фолд.'} ${street==='turn'?'На тёрне одна карта, поэтому дро стоит гораздо меньше, чем на флопе.':''}`,tag:'хватает ли шансов'}
+}
 function renderSpeed(){
   if(SP.phase==='intro'){const b=S.mathBest;
-    return `<div class="hero"><span class="eyebrow">Счёт на скорость</span><h1>Математика как рефлекс</h1><p>За столом нет времени на расчёты. 15 задач, ${SPEED_SEC} секунд на каждую: шансы банка, MDF, фолд-эквити, баланс блефов, ауты, комбинаторика. Задачи генерируются заново каждый раз. Цель: 90%+ при среднем времени до 6 секунд.</p></div>
+    const adv=S.prefs&&S.prefs.adv;
+    return `<div class="hero"><span class="eyebrow">Простой счёт</span><h1>Минимум счёта, который нужен за столом</h1><p>Только три вещи: как часто должен выигрывать колл, сколько шансов у твоего дро и хватает ли их для колла. 15 задач по ${SPEED_SEC} секунд, каждый раз новые. Выучи табличку ниже, и задачи станут быстрыми.</p>
+      <div class="seg"><button aria-pressed="${!adv}" data-act="adv" data-v="0">Простой режим</button><button aria-pressed="${!!adv}" data-act="adv" data-v="1">Продвинутый</button></div></div>
       <div class="grid3"><div class="panel tight stat"><span class="v">${b?b.c+'/15':'—'}</span><span class="l">лучший результат</span></div><div class="panel tight stat"><span class="v">${b?(b.avg/1000).toFixed(1)+' с':'—'}</span><span class="l">среднее время в лучшем</span></div><div class="panel tight stat"><span class="v">${S.log.filter(e=>e.kind==='speed').length}</span><span class="l">пройдено разминок</span></div></div>
       <div class="row"><button class="btn primary" data-act="sp-start">Старт</button></div>
-      <div class="panel stack-s"><h3>Шпаргалка, которую надо выучить</h3>
-      <div class="scroll-x"><table class="mini"><thead><tr><th>Ставка (от банка)</th><th>Нужно эквити для колла</th><th>MDF</th><th>Нужно фолдов для блефа</th></tr></thead><tbody>
-      ${FRACS.map(([f,l])=>`<tr><td>${l}</td><td class="mono">${P(f/(1+2*f))}</td><td class="mono">${P(1/(1+f))}</td><td class="mono">${P(f/(1+f))}</td></tr>`).join('')}</tbody></table></div></div>`}
+      <div class="grid2"><div class="panel stack-s"><h3>Сколько должен выигрывать колл</h3>
+      <div class="scroll-x"><table class="mini"><thead><tr><th>Соперник ставит</th><th>Колл должен выигрывать</th></tr></thead><tbody>
+      ${SFR.map(([f,l])=>`<tr><td>${l}</td><td class="mono">${PS(f/(1+2*f))}</td></tr>`).join('')}</tbody></table></div></div>
+      <div class="panel stack-s"><h3>Как часто собирается дро</h3>
+      <div class="scroll-x"><table class="mini"><thead><tr><th>Дро</th><th>С флопа до ривера</th><th>На одной карте</th></tr></thead><tbody>
+      ${DRAWS.map(([n,l])=>`<tr><td>${l}</td><td class="mono">${P(1-((47-n)*(46-n))/(47*46))}</td><td class="mono">${P(n/46)}</td></tr>`).join('')}</tbody></table></div><p class="faint" style="font-size:13px">«С флопа до ривера» считается, только если ты увидишь обе карты, например когда кто-то уже олл-ин.</p></div></div>`}
   if(SP.phase==='q'){const q=SP.qs[SP.i];const ans=SP.sel!=null;
     return `<div class="row" style="justify-content:space-between"><span class="eyebrow">Задача ${SP.i+1} из ${SP.qs.length}</span><span class="mono" id="sp-left">${ans?'':Math.ceil(SP.left)+' с'}</span></div>
       <div class="progress timer ${SP.left<4?'low':''}" id="sp-bar"><i style="width:${ans?0:SP.left/SPEED_SEC*100}%"></i></div>
-      <div class="panel stack"><p class="q-text">${tx(q.q)}</p>
+      <div class="panel stack"><p class="q-text">${txg(q.q)}</p>
         <div class="opts" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr))">${q.opts.map((o,i)=>{let c='';if(ans){if(i===q.ans)c='right';else if(i===SP.sel)c='wrong'}return `<button class="opt ${c}" data-act="sp-ans" data-i="${i}" ${ans?'disabled':''}><span class="k">${'ABCD'[i]}</span><span class="mono">${esc(o)}</span></button>`}).join('')}</div>
-        ${ans?`<div class="why ${SP.sel===q.ans?'good':'bad'}">${SP.sel===-1?'<b>Время вышло.</b> ':''}${tx(q.why)}</div><div class="row"><button class="btn primary" data-act="sp-next">${SP.i===SP.qs.length-1?'Итоги':'Дальше'}</button></div>`:''}
+        ${ans?`<div class="why ${SP.sel===q.ans?'good':'bad'}">${SP.sel===-1?'<b>Время вышло.</b> ':''}${txg(q.why)}</div><div class="row"><button class="btn primary" data-act="sp-next">${SP.i===SP.qs.length-1?'Итоги':'Дальше'}</button></div>`:''}
       </div>`}
   const avg=SP.ms.length?SP.ms.reduce((a,b)=>a+b,0)/SP.ms.length:0;
-  return `<div class="hero"><span class="eyebrow">Разминка завершена</span><div class="row" style="align-items:flex-end;gap:18px"><span class="big-num">${SP.c}/${SP.qs.length}</span><span class="muted" style="padding-bottom:8px">среднее время ${(avg/1000).toFixed(1)} с · ${SP.c>=14&&avg<6000?'уровень автомата':SP.c>=12?'хорошо, дожимай скорость':'повтори шпаргалку и попробуй снова'}</span></div></div>
-    <div class="row"><button class="btn primary" data-act="sp-start">Ещё раз</button><button class="btn" data-go="home">В штаб</button></div>
+  return `<div class="hero"><span class="eyebrow">Готово</span><div class="row" style="align-items:flex-end;gap:18px"><span class="big-num">${SP.c}/${SP.qs.length}</span><span class="muted" style="padding-bottom:8px">среднее время ${(avg/1000).toFixed(1)} с · ${SP.c>=14?'отлично':SP.c>=11?'хорошо, повтори табличку и станет ещё быстрее':'перечитай таблички внизу раздела и попробуй снова'}</span></div></div>
+    <div class="row"><button class="btn primary" data-act="sp-start">Ещё раз</button><button class="btn" data-go="home">На главную</button></div>
     <div class="panel stack-s"><h3>По типам задач</h3>${barsHTML(Object.entries(SP.res.reduce((m,r)=>{const b=m[r.tag]||(m[r.tag]={c:0,t:0});b.t++;if(r.ok)b.c++;return m},{})).map(([k,b])=>({l:k,v:b.c/b.t})))}</div>`;
 }
 function spTick(){
@@ -793,7 +863,7 @@ ACTS['sp-next']=()=>{SP.i++;SP.sel=null;if(SP.i>=SP.qs.length){SP.phase='done';c
   const b=S.mathBest;if(!b||SP.c>b.c||(SP.c===b.c&&avg<b.avg))S.mathBest={c:SP.c,avg,d:today()};logEvent('speed','math',SP.c,SP.qs.length,{avg});save();render()}else{render();spStartTimer()}};
 
 /* ============================== AI COACH ============================== */
-const COACH_RULES=`Ты — элитный тренер по безлимитному холдему: опыт high-stakes регуляра плюс годы тренерской работы. Отвечаешь по-русски, покерным сленгом русскоязычных регуляров (c-bet, чек-рейз, блефкэтчер, натсы, MDF, SPR). Учишь процессу мышления, а не ответам: диапазоны вместо рук, частоты вместо «всегда/никогда», конкретные эксплойты против конкретных профилей. Говоришь прямо, без воды и без морализаторства. Если данных не хватает, называешь допущение и идёшь дальше.`;
+const COACH_RULES=`Ты — сильный и практичный тренер по холдему. Твой ученик — любитель среднего уровня: играет в основном турниры (онлайн и вживую) и немного живого кэша. Базу он знает, но сложная теория и математика его перегружают. Отвечай по-русски простыми словами, короткими предложениями, как опытный друг за столом. Не используй термины MDF, EV, SPR, GTO, ICM, солвер, эквити, поляризованный, частоты, комбинаторика. Вместо этого говори «в плюс на дистанции», «шансы», «на баббле вылет стоит дороже». Обычные слова (рейз, колл, 3-бет, c-bet, топ-пара, дро, натсы) можно. Числа — максимум одно-два и в виде «1 раз из 4». Опирайся на практику: какие руки у соперника по его действиям (корзины: сильные, средние, дро, ничего), кто заплатит и кто сбросит, какой тип соперника (станция, нит, маньяк, регуляр) и как против него играть. Давай простое правило, которое можно унести за стол. Если данных не хватает, назови допущение и иди дальше.`;
 function profileBrief(){
   const p=S.profile||{};const parts=[];
   if(Object.values(p).some(Boolean))parts.push('Анкета ученика: '+PROFILE_Q.map(q=>p[q.k]?q.l+' — '+p[q.k]:null).filter(Boolean).join('; ')+'.');
@@ -813,22 +883,22 @@ function sampleErr(e){const c=e&&e.code;
   if(c==='session_expired')return 'Сессия истекла. Войди в Claude заново.';
   return 'Связь с тренером прервалась. Попробуй ещё раз.'}
 const AI={chat:[],ctl:null,review:'',reviewOut:'',genStatus:''};
-const HAND_EXAMPLE=`NL50 6-max, 100bb эфф.
-Hero BTN с K♠Q♠. CO (регуляр, 24/20, 3-бет 7%) открывается 2.5bb, Hero 3-бет 8bb, CO колл.
-Флоп (16.5bb): Q♥ 8♣ 3♦. CO чек, Hero ставит 5.5, CO чек-рейз до 17.
-Тёрн (50.5bb): 2♣. CO ставит 26. Hero ?
-Что я думал: у него много QJ/AQ/88/33, но и блефы с дро. Я сфолдил.`;
+const HAND_EXAMPLE=`Живой турнир, середина, анте. У меня 30бб, у соперника примерно столько же.
+Я на баттоне с A♥Q♣, открылся на 2.2бб. BB (тихий мужчина, весь вечер играл мало рук) заколлировал.
+Флоп K♠ Q♦ 6♠. Он чекнул, я поставил треть банка, он заколлировал.
+Тёрн 2♥. Он чекнул, я поставил полбанка, он сделал олл-ин.
+Я подумал, что у него может быть король или пиковое дро, и заколлировал. У него была K6.`;
 function renderAI(){
   if(!sampleFn)return `<div class="hero"><span class="eyebrow">AI-тренер</span><h1>Разбор твоих раздач</h1><p>Здесь тренер разбирает твои раздачи по улицам, отвечает на вопросы и генерирует новые споты под твои слабые места.</p></div>
     <div class="panel stack-s"><h3>Сейчас AI-тренер не подключён</h3><p class="muted">Он работает, когда страница открыта в Claude под твоим аккаунтом и ты разрешишь ей обращаться к Claude. Остальные разделы работают без него.</p></div>`;
   const weak=weakestAxes();
-  return `<div class="hero"><span class="eyebrow">AI-тренер</span><h1>Разбор раздач и вопросы тренеру</h1><p>Тренер видит твой профиль: оси мастерства, тип игрока, тилт-профиль и последние сессии. Разбор строится вокруг твоих слабых мест. Запросы расходуют лимит твоего аккаунта Claude.</p></div>
-    <div class="panel stack"><div class="stack-s"><span class="eyebrow">Разбор раздачи</span><h2>Вставь раздачу из своей сессии</h2><p class="muted" style="font-size:14px">Позиции, стеки, сайзинги, что знаешь об оппоненте и <b>что ты думал в моменте</b>. Последнее важнее всего: тренер разбирает мышление, а не только действие.</p></div>
+  return `<div class="hero"><span class="eyebrow">AI-тренер</span><h1>Разбор твоих раздач простыми словами</h1><p>Опиши раздачу как другу: где сидел, что пришло, кто как ставил и что ты думал. Тренер разберёт её по улицам и даст одно правило на будущее. Запросы расходуют лимит твоего аккаунта Claude.</p></div>
+    <div class="panel stack"><div class="stack-s"><span class="eyebrow">Разбор раздачи</span><h2>Вставь раздачу из своей сессии</h2><p class="muted" style="font-size:14px">Позиции, стеки, кто сколько ставил, что знаешь о сопернике и <b>что ты думал в моменте</b>. Можно писать своими словами, без точных цифр.</p></div>
       <div class="field"><label for="ai-hand">Раздача</label><textarea id="ai-hand" rows="8" placeholder="${esc(HAND_EXAMPLE)}">${esc(AI.review)}</textarea></div>
       <div class="row"><button class="btn primary" data-act="ai-review">Разобрать</button><button class="btn small" data-act="ai-example">Подставить пример</button><button class="btn small" data-act="ai-stop" ${AI.ctl?'':'disabled'}>Стоп</button></div>
       <div id="ai-review-out" class="ai-out">${AI.reviewOut?esc(AI.reviewOut):''}</div>
     </div>
-    <div class="panel stack"><div class="stack-s"><span class="eyebrow">Генератор спотов</span><h2>Новые задачи под твои дыры</h2><p class="muted" style="font-size:14px">Тренер составит 4 новых спота по выбранной оси. Они попадут в тренажёр и в интервальное повторение.</p></div>
+    <div class="panel stack"><div class="stack-s"><span class="eyebrow">Новые ситуации</span><h2>Тренер придумает ситуации по твоей теме</h2><p class="muted" style="font-size:14px">4 новые ситуации по выбранной теме. Они появятся в тренажёре.</p></div>
       <div class="seg">${AXES.map(a=>`<button data-act="ai-gen" data-cat="${a.id}" aria-pressed="false">${esc(a.name)}${a.id===weak[0].id?' · слабее всего':''}</button>`).join('')}</div>
       <p class="muted" id="ai-gen-status" style="font-size:14px">${esc(AI.genStatus)}</p>
       ${S.aiQs.length?`<p class="faint" style="font-size:13px">Сгенерировано спотов: ${S.aiQs.length}. <button class="link" data-act="t-start" data-cat="smart">Тренировать</button></p>`:''}
@@ -845,7 +915,7 @@ ACTS['ai-review']=async(el)=>{
   const hand=($('#ai-hand')||{}).value||'';if(hand.trim().length<20){toast('Опиши раздачу подробнее');return}
   AI.review=hand;AI.ctl=new AbortController();busy=true;el.disabled=true;$('[data-act="ai-stop"]').disabled=false;
   const out=$('#ai-review-out');out.textContent='Тренер думает над раздачей… (обычно 20–60 секунд)';
-  const prompt=`${COACH_RULES}\n\nПРОФИЛЬ УЧЕНИКА\n${profileBrief()}\n\nРАЗДАЧА УЧЕНИКА\n${hand.slice(0,6000)}\n\nСделай тренерский разбор строго в такой структуре, простым текстом без markdown-разметки (заголовки — отдельной строкой ЗАГЛАВНЫМИ буквами):\nВЕРДИКТ — 2 предложения: главная ошибка или подтверждение, что сыграно хорошо.\nПО УЛИЦАМ — для каждой улицы: диапазон героя, диапазон оппонента (с учётом его профиля), лучшее действие и сайзинг, почему.\nМЫШЛЕНИЕ — разбери то, что ученик думал в моменте: где логика верна, где ошибка процесса (например, думал о конкретной руке, а не о диапазоне; игнорировал профиль; result-oriented).\nСВЯЗЬ С ПРОФИЛЕМ — как эта раздача связана с его слабыми осями.\nЗАДАНИЕ — одно конкретное упражнение на неделю.\nВОПРОСЫ — два сократических вопроса, которые ученик должен задать себе в похожем споте.\nОбъём до 450 слов.`;
+  const prompt=`${COACH_RULES}\n\nПРОФИЛЬ УЧЕНИКА\n${profileBrief()}\n\nРАЗДАЧА УЧЕНИКА\n${hand.slice(0,6000)}\n\nСделай разбор простым текстом без markdown-разметки (заголовки — отдельной строкой ЗАГЛАВНЫМИ буквами):\nКОРОТКО — 2 предложения: что было главным в раздаче, сыграно хорошо или где ошибка.\nПО УЛИЦАМ — для каждой улицы: что, скорее всего, было у соперника (сильные руки, средние, дро, ничего) и почему; как лучше было сыграть и каким размером; почему.\nКАК ТЫ ДУМАЛ — что в рассуждениях ученика было верно, а где он ошибся.\nПРАВИЛО — одно простое правило на будущее.\nЗАДАНИЕ — одно маленькое задание на неделю.\nДо 350 слов, простыми словами.`;
   try{await sampleFn(prompt,{modelTier:'complex',signal:AI.ctl.signal,cache:false,onText:({text})=>{out.textContent=text;AI.reviewOut=text}});logEvent('review','ai',0,0)}
   catch(e){if(e&&e.text){out.textContent=e.text+'\n\n['+sampleErr(e)+']';AI.reviewOut=out.textContent}else{out.textContent=sampleErr(e)}}
   AI.ctl=null;busy=false;el.disabled=false;const st=$('[data-act="ai-stop"]');if(st)st.disabled=true;save();
@@ -867,8 +937,8 @@ ACTS['ai-gen']=async(el)=>{
   const cat=el.dataset.cat;const st=$('#ai-gen-status');document.querySelectorAll('[data-act="ai-gen"]').forEach(b=>b.disabled=true);
   st.textContent=`Тренер составляет споты: ${AXIS[cat].name}… (до минуты)`;busy=true;
   const wrongTags=Object.entries(S.srs).filter(([id,r])=>r.wrong).map(([id])=>qById(id)).filter(q=>q&&q.cat===cat).map(q=>q.tag).filter(Boolean);
-  const examples=BANK.filter(q=>q.cat===cat).slice(0,2).map(q=>JSON.stringify(q)).join('\n');
-  const prompt=`${COACH_RULES}\n\nПРОФИЛЬ УЧЕНИКА\n${profileBrief()}\n${wrongTags.length?'Навыки, на которых ученик ошибался: '+[...new Set(wrongTags)].slice(0,8).join(', ')+'.':''}\n\nСоставь 4 НОВЫХ тренировочных спота по оси «${AXIS[cat].name}» (${AXIS[cat].desc}). Уровень: средний и продвинутый, под этого ученика. Только споты, где лучший ответ однозначно защищается солверной логикой или ясным эксплойтом (тогда опиши профиль оппонента). Математику проверь дважды. Правильный ответ ставь на разные позиции.\n\nОтветь ТОЛЬКО JSON-массивом из 4 объектов такой формы (тексты на русском):\n{"level":2,"pos":"BTN vs BB","hero":"As Kd","board":"Kh 7c 2d","pot":12.5,"stack":87.5,"q":"ситуация и вопрос","opts":["...","...","...","..."],"ans":1,"why":"разбор процесса мышления, 3-5 предложений","tag":"короткий навык"}\nКарты в формате ранг+масть (s,h,d,c), ранги 2-9,T,J,Q,K,A; пустая строка, если не нужно. pot и stack в bb или null.\nПримеры формата:\n${examples}`;
+  const examples=BANK.filter(q=>q.cat===cat&&q.simple).slice(0,2).map(q=>JSON.stringify(q)).join('\n');
+  const prompt=`${COACH_RULES}\n\nПРОФИЛЬ УЧЕНИКА\n${profileBrief()}\n${wrongTags.length?'Навыки, на которых ученик ошибался: '+[...new Set(wrongTags)].slice(0,8).join(', ')+'.':''}\n\nСоставь 4 НОВЫХ тренировочных спота по теме «${AXIS[cat].name}» (${AXIS[cat].desc}). Уровень: понятный любителю, практичный, в основном турниры и живая игра. Добавь поле "rule" — простое правило одной фразой. Только споты, где лучший ответ однозначно защищается солверной логикой или ясным эксплойтом (тогда опиши профиль оппонента). Математику проверь дважды. Правильный ответ ставь на разные позиции.\n\nОтветь ТОЛЬКО JSON-массивом из 4 объектов такой формы (тексты на русском):\n{"level":2,"pos":"BTN vs BB","hero":"As Kd","board":"Kh 7c 2d","pot":12.5,"stack":87.5,"q":"ситуация и вопрос","opts":["...","...","...","..."],"ans":1,"why":"разбор процесса мышления, 3-5 предложений","tag":"короткий навык"}\nКарты в формате ранг+масть (s,h,d,c), ранги 2-9,T,J,Q,K,A; пустая строка, если не нужно. pot и stack в bb или null.\nПримеры формата:\n${examples}`;
   try{
     const arr=await sampleFn.json(prompt,{modelTier:'complex',cache:false});
     const ok=(Array.isArray(arr)?arr:[]).map((x,i)=>validQ(x,cat,i)).filter(Boolean);
@@ -885,7 +955,7 @@ function validQ(x,cat,i){
   if(!x.q||!x.why)return null;
   const cardsOk=s=>typeof s==='string'&&s.trim().split(/\s+/).every(c=>/^[2-9TJQKA][shdc]$/.test(c))?s.trim():'';
   const num=v=>v==null||v===''||isNaN(+v)?null:+v;
-  return{id:'ai-'+Date.now().toString(36)+'-'+i,cat,ai:true,level:clamp(Number(x.level)||2,1,3),pos:String(x.pos||'').slice(0,40),hero:cardsOk(x.hero),board:cardsOk(x.board),pot:num(x.pot),stack:num(x.stack),q:String(x.q).slice(0,1500),opts:opts.map(o=>o.slice(0,300)),ans,why:String(x.why).slice(0,1500),tag:String(x.tag||'').slice(0,60)};
+  return{id:'ai-'+Date.now().toString(36)+'-'+i,cat,ai:true,simple:true,rule:String(x.rule||'').slice(0,300),level:clamp(Number(x.level)||2,1,3),pos:String(x.pos||'').slice(0,40),hero:cardsOk(x.hero),board:cardsOk(x.board),pot:num(x.pot),stack:num(x.stack),q:String(x.q).slice(0,1500),opts:opts.map(o=>o.slice(0,300)),ans,why:String(x.why).slice(0,1500),tag:String(x.tag||'').slice(0,60)};
 }
 
 
@@ -949,12 +1019,24 @@ const TELLS=[
   ['Онлайн-тайминг','Снап-колл на ривере — заранее решённый блефкэтчер. Танк, а затем рейз от слабого игрока — сила. Сигнал зашумлён мультитейблингом.','warn'],
   ['Ненадёжные «теллы»','Взгляд на фишки после флопа, моргание, зрительный контакт сам по себе. Не опирайся на них.','bad'],
 ];
-const DS={mode:'cards',open:'fish',quiz:null};
+const DS={mode:'simple',open:'fish',quiz:null};
+const TYPES4=[
+  {n:'Станция',k:'Коллирует почти всё',see:['Заходит почти в каждую раздачу','Коллирует до ривера с любой парой и с дро','Сам ставит редко','На вскрытии показывает слабые пары и «доехавшие» руки'],do:['Ставь на вэлью часто и крупно, даже со средней парой','Не блефуй совсем','Если он вдруг рейзит — сбрасывай всё, кроме очень сильных рук'],ex:'У тебя топ-пара, ривер ничего не поменял, он чекает. Ставь 2/3 банка: он заплатит второй и третьей парой.'},
+  {n:'Нит',k:'Играет только сильные руки',see:['Играет очень мало рук','Долго ждёт, редко рейзит','Если ставит или рейзит — почти всегда сильная рука','На вскрытии только хорошие руки'],do:['Чаще открывайся, когда он на блайндах: он отдаст их','Верь его рейзам и 3-бетам, сбрасывай средние руки','Блефуй, когда он чекает, а не когда ставит'],ex:'Нит делает 3-бет на твой рейз. У тебя AJ. Фолд: у него QQ+, AK.'},
+  {n:'Маньяк',k:'Ставит и рейзит почти всегда',see:['Рейзит и перерейзит почти каждую раздачу','Ставит на каждой улице','Часто показывает блефы','Много ребаев'],do:['Не блефуй: он не сбрасывает','Коллируй средними руками и давай ему блефовать дальше','С сильными руками иди олл-ин, не бойся'],ex:'Маньяк ставит три улицы, у тебя вторая пара. Чаще колл: у него много воздуха.'},
+  {n:'Регуляр',k:'Нормальный думающий игрок',see:['Играет разумное количество рук','Ставки разного размера, сложно прочитать','Редко делает явные ошибки'],do:['Избегай лишних конфликтов без позиции','Уважай его крупные ставки на ривере','Основные деньги ищи у слабых игроков за столом'],ex:'Регуляр рейзит твою ставку на ривере. У тебя одна пара. Чаще фолд: на ривере даже регуляры блефуют реже, чем нужно.'},
+];
 function genHud(){const a=pick(ARCH);const st={};for(const k in a.st){const [lo,hi]=a.st[k];const v=lo+Math.random()*(hi-lo);st[k]=k==='AF'?v.toFixed(1):Math.round(v)}
   const wrong=shuffle(ARCH.filter(x=>x.id!==a.id)).slice(0,3);const opts=shuffle([a,...wrong]);return{a,st,opts,sel:null}}
 function renderDossier(){
-  const head=`<div class="hero"><span class="eyebrow">Досье игроков</span><h1>Против каждого оппонента — план за 30 рук</h1><p>Ты играешь не против карт, а против людей, у которых предсказуемые ошибки. Задача: быстро опознать тип по статам и поведению, вспомнить его диапазоны и включить 2–3 главных эксплойта. Цифры — ориентиры для 6-max онлайн. В фулринге VPIP, PFR и 3-бет на 20–30% ниже.</p></div>
-    <div class="seg"><button aria-pressed="${DS.mode==='cards'}" data-act="ds-mode" data-m="cards">Типы игроков</button><button aria-pressed="${DS.mode==='quiz'}" data-act="ds-mode" data-m="quiz">Угадай тип по HUD</button><button aria-pressed="${DS.mode==='pop'}" data-act="ds-mode" data-m="pop">Популяция и теллы</button></div>`;
+  const head=`<div class="hero"><span class="eyebrow">Соперники</span><h1>Против каждого соперника — свой план</h1><p>Ты играешь не против карт, а против людей. У каждого типа игроков свои предсказуемые ошибки. Задача простая: за 20–30 раздач понять, кто перед тобой, и включить 2–3 правила против него.</p></div>
+    <div class="seg"><button aria-pressed="${DS.mode==='simple'}" data-act="ds-mode" data-m="simple">4 типа соперников</button><button aria-pressed="${DS.mode==='pop'}" data-act="ds-mode" data-m="pop">Как играют любители и живые теллы</button><button aria-pressed="${DS.mode==='cards'}" data-act="ds-mode" data-m="cards">Подробно, со статистикой</button><button aria-pressed="${DS.mode==='quiz'}" data-act="ds-mode" data-m="quiz">Угадай тип по статистике</button></div>`;
+  if(DS.mode==='simple')return head+`<div class="grid2">${TYPES4.map(t=>`<div class="panel stack"><div class="stack-s"><h2>${esc(t.n)}</h2><p class="muted">${esc(t.k)}</p></div>
+      <div class="stack-s"><span class="eyebrow">Как узнать</span><ul class="ll">${t.see.map(x=>`<li>${txg(x)}</li>`).join('')}</ul></div>
+      <div class="stack-s"><span class="eyebrow">Как играть против него</span><ul class="ll">${t.do.map(x=>`<li>${txg(x)}</li>`).join('')}</ul></div>
+      <div class="why">${txg(t.ex)}</div></div>`).join('')}</div>
+      <div class="rule"><span class="eyebrow">Главное правило</span><p>Против того, кто много коллирует, — ставь на вэлью. Против того, кто много сбрасывает, — блефуй. Против того, кто много ставит, — коллируй.</p></div>
+      <div class="row"><button class="btn primary" data-act="train-cat" data-cat="exploit">Потренироваться на ситуациях</button><button class="btn" data-act="sc-open" data-id="l-types">Урок про типы соперников</button></div>`;
   if(DS.mode==='quiz'){
     if(!DS.quiz)DS.quiz={n:0,c:0,cur:genHud()};
     const Q=DS.quiz,cur=Q.cur,ans=cur.sel!=null;
@@ -965,7 +1047,7 @@ function renderDossier(){
       <p class="faint" style="font-size:13px">Подсказка: сначала разрыв VPIP−PFR (пассивность), затем 3-бет и AF (агрессия), затем WTSD и Fold to c-bet (как играет постфлоп).</p></div>`;
   }
   if(DS.mode==='pop'){
-    return head+`<div class="panel stack"><h2>Популяционные тенденции</h2><p class="muted" style="font-size:14px">Против незнакомого игрока по умолчанию играй против пула. Это стартовые допущения, пока нет статов.</p>
+    return head+`<div class="panel stack"><h2>Как обычно играют любители</h2><p class="muted" style="font-size:14px">Против незнакомого игрока исходи из того, как играет большинство. Это стартовые допущения, пока ты его не изучил.</p>
       <div class="grid2">${POP.map(([t,d])=>`<div class="stack-s"><h3>${esc(t)}</h3><p class="muted" style="font-size:14px">${esc(d)}</p></div>`).join('')}</div></div>
       <div class="panel stack"><h2>Живые теллы, у которых есть основания</h2><p class="muted" style="font-size:14px">По Заку Элвуду: читай отклонения от базового поведения конкретного человека и кластеры сигналов вместе с линией ставок, а не одиночные жесты. Правило «сильный значит слабый» — частный случай.</p>
       <div class="grid2">${TELLS.map(([t,d,k])=>`<div class="stack-s"><h3>${esc(t)} <span class="pill ${k}">${k==='good'?'сила':k==='warn'?'слабость':'шум'}</span></h3><p class="muted" style="font-size:14px">${esc(d)}</p></div>`).join('')}</div></div>
@@ -1019,7 +1101,7 @@ function renderMental(){
   const tilt=S.tilt;
   const preDone=doneToday('pre');
   const js=S.journal.slice(-14);
-  return `<div class="hero"><span class="eyebrow">Ментальная игра</span><h1>Голова — тоже навык</h1><p>По модели Джареда Тендлера твоя игра — это диапазон от A-game до C-game. Расти можно двумя путями: поднимать пик (учёба) и поднимать дно (ментал). Второе обычно быстрее окупается: одна сессия в тилте съедает неделю хорошей игры.</p></div>
+  return `<div class="hero"><span class="eyebrow">Ментальная игра</span><h1>Голова — тоже навык</h1><p>У каждого есть лучшая игра (A-game) и худшая (C-game: усталость, злость, игра «на отыгрыш»). Самый быстрый способ стать плюсовым — реже играть в C-game. Одна сессия в тилте съедает неделю хорошей игры.</p></div>
     <div class="grid2">
       <div class="panel stack"><div class="stack-s"><span class="eyebrow">До игры · 2 минуты</span><h2>Чек-лист готовности</h2></div>
         <div>${PRE.map(([k,t])=>`<div class="check ${MT.pre[k]?'done':''}"><input type="checkbox" id="pre-${k}" data-act="pre" data-k="${k}" ${MT.pre[k]?'checked':''}><label for="pre-${k}"><span>${esc(t)}</span></label></div>`).join('')}</div>
@@ -1064,31 +1146,156 @@ ACTS['j-save']=()=>{syncJ();S.journal.push({d:today(),a:MT.j.a,tilt:MT.j.tilt,tr
 document.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.actInput;if(k==='j-a'){MT.j.a=+e.target.value;$('#j-a-v').textContent=MT.j.a+'%'}if(k==='j-t'){MT.j.tilt=+e.target.value;$('#j-t-v').textContent=MT.j.tilt+'/10'}});
 
 /* ============================== PLAN ============================== */
-const WEEK_LIB={
-  math:{t:'Математика на автомате',goal:'Шансы банка, MDF и комбо — без пауз за столом.',tasks:['Каждый день разминка «Счёт на скорость», цель 14/15 и <6 с','Выучи шпаргалку сайзингов: эквити для колла, MDF, нужные фолды','В каждой сессии на ривере вслух (про себя) считай: «мне нужно X% — сколько у него блефов?»','5 раздач из базы: посчитай комбо вэлью и блефов оппонента на ривере','Тренажёр: 2 сессии по оси «Математика»']},
-  ranges:{t:'Мышление диапазонами',goal:'Привычка видеть 3 корзины на каждой улице: вэлью, дро/блефы, блефкэтчеры.',tasks:['Нарисуй все 6 эталонных диапазонов на 85%+','Каждую крупную раздачу в журнале записывай как «диапазон → действие», а не «рука → действие»','Упражнение «сужение»: 3 раздачи, после каждой улицы выписывай, какие руки ушли из диапазона оппонента','Тренажёр: 2 сессии по оси «Чтение диапазонов»','AI-тренер: разбери одну раздачу, где ты ошибся в чтении']},
-  postflop:{t:'Постфлоп-стратегия',goal:'Понимать, почему солвер ставит маленько на сухих досках и чекает на связанных.',tasks:['Тренажёр: 3 сессии по оси «Постфлоп»','Выпиши правило c-bet для 4 типов флопов: сухой высокий, спаренный, связанный средний, монотонный','Найди в своей базе 10 тёрнов, где ты не продолжил баррель, и проверь, были ли у тебя хорошие блефы с эквити','Ривер: в каждой раздаче на ривере называй себе свой лучший блеф по блокерам','AI-тренер: сгенерируй споты по оси «Постфлоп»']},
-  exploit:{t:'Чтение игроков и эксплойт',goal:'Против каждого оппонента иметь план за 30 рук.',tasks:['На каждой сессии ставь метку-профиль минимум 5 оппонентам (фиш, нит, маньяк, рег, станция)','Под каждый профиль запиши 3 главных эксплойта и используй их','Тренажёр: 3 сессии по оси «Чтение игроков»','Отслеживай сайзинг-теллы рекреационалов: маленькая ставка = слабость или натсы? Записывай','AI-тренер: опиши самого неприятного оппонента и получи план игры против него']},
-  preflop:{t:'Префлоп без дыр',goal:'Чёткие 3-бет/колл/фолд ответы на открытия с каждой позиции.',tasks:['Нарисуй диапазоны BB 3-бет и SB-открытие на 85%+','Тренажёр: 2 сессии по оси «Префлоп»','Посмотри свою статистику: фолд на 3-бет, 3-бет по позициям. Сравни с нормами 45–55% и 6–10%','Сквизы: отметь 5 спотов за неделю, где был сквиз, и проверь, сделал ли ты его','Против каждого регуляра отметь его 3-бет и подстрой 4-бет блефы']},
-  mental:{t:'Голова и дисциплина',goal:'Поднять дно: меньше C-game, меньше сессий в тилте.',tasks:['Пройди профиль тилта и выпиши фразу-якорь под главный тип','Ритуал перед каждой сессией — без исключений','Журнал после каждой сессии, честная доля A-game','Стоп-лосс записан на неделю вперёд','Тренажёр: 1 сессия по оси «Ментальная игра»']},
-};
-function planWeeks(){
-  const w=weakestAxes().map(x=>x.id);const order=[...w,...AXES.map(a=>a.id).filter(id=>!w.includes(id))];
-  const uniq=[...new Set(order)];
-  const weeks=[{id:'w0',t:'Неделя 1 · База и ритм',goal:'Установить ежедневную структуру и снять точный профиль.',tasks:['Пройти диагностику','Профиль тилта + чек-лист перед каждой сессией','Ежедневная программа минимум 5 дней из 7','Разминка «Счёт на скорость» каждый день','Журнал после каждой сессии']}];
-  uniq.slice(0,6).forEach((id,i)=>{const L=WEEK_LIB[id];weeks.push({id:'w'+(i+1)+'-'+id,t:`Неделя ${i+2} · ${L.t}`,goal:L.goal,tasks:L.tasks,axis:id})});
-  weeks.push({id:'w7',t:'Неделя 8 · Контрольная',goal:'Повторная диагностика и новый план.',tasks:['Пройти диагностику заново и сравнить радар','Разобрать с AI-тренером 3 самые дорогие раздачи месяца','Сравнить долю A-game в журнале с первой неделей','Выбрать две оси на следующий цикл']});
-  return weeks;
-}
-function currentWeek(){if(!S.plan.start)return 0;const d=Math.floor((Date.now()-new Date(S.plan.start+'T00:00:00').getTime())/(7*DAY));return clamp(d,0,7)}
+const PLAN=[
+  {id:'p1',t:'Как выигрывать и позиция',goal:'Понять, откуда берутся деньги, и перестать играть лишние руки с ранних мест.',lessons:['l-money','l-bank','l-pos'],cat:'preflop',table:'В каждой игре следи за собой: сколько рук ты сыграл с первых двух мест. Цель — почти только сильные.'},
+  {id:'p2',t:'Префлоп: против рейза и короткий стек',goal:'Чёткие ответы на чужой рейз и уверенная игра с 10–20бб.',lessons:['l-vsraise','l-short','l-limp'],cat:'preflop',table:'Когда стек меньше 15бб, играй только пуш или фолд. Никаких лимпов и коллов на половину стека.'},
+  {id:'p3',t:'После флопа: ставка и топ-пара',goal:'Знать, когда ставить продолжающую ставку и сколько улиц тянуть топ-пару.',lessons:['l-cbet','l-toppair'],cat:'postflop',table:'Перед каждой ставкой спроси себя: «Какие худшие руки мне заплатят?»'},
+  {id:'p4',t:'Дро и ривер',goal:'Не переплачивать за дро и правильно решать на ривере.',lessons:['l-draws','l-river'],cat:'math',table:'С дро против большой ставки на тёрне вспоминай табличку: 1 из 5 — это мало против ставки в банк.'},
+  {id:'p5',t:'Что у соперника',goal:'Думать корзинами и читать ставки любителей.',lessons:['l-buckets','l-tells'],cat:'ranges',table:'В каждой крупной раздаче назови себе: какие корзины рук остались у соперника после его действий.'},
+  {id:'p6',t:'Соперники, стадии турнира и проверка',goal:'Быстро определять тип соперника и подстраиваться под стадию турнира. В конце — повторная проверка уровня.',lessons:['l-types','l-stages'],cat:'exploit',table:'В начале каждого турнира за первые 30 раздач отметь для себя тип каждого соперника за столом.',final:true},
+];
+function currentWeek(){if(!S.plan.start)return 0;const d=Math.floor((Date.now()-new Date(S.plan.start+'T00:00:00').getTime())/(7*DAY));return clamp(d,0,PLAN.length-1)}
 function renderPlan(){
-  const weeks=planWeeks();const cw=currentWeek();
-  return `<div class="hero"><span class="eyebrow">Программа на 8 недель</span><h1>План, собранный под твои слабые места</h1><p>${S.diag?'Порядок недель выстроен от самой слабой оси к сильной и пересчитывается по мере тренировок.':'Пока порядок стандартный. После диагностики недели перестроятся под твои слабые оси.'} Каждый день: 60–90 минут = 15 мин разминка + 25 мин тренажёр/диапазоны + игра с одной целью + 10 мин журнал.</p></div>
-    <div class="panel stack-s"><h3>Пропорция учёбы и игры</h3><p class="muted" style="font-size:14px">На этапе роста держи 30–40% времени на учёбу. Игра без разбора закрепляет и хорошие, и плохие привычки одинаково. Учёба без игры не проверяется реальностью.</p></div>
-    <div class="stack">${weeks.map((w,i)=>{const done=w.tasks.filter((_,k)=>S.plan.done[w.id+':'+k]).length;return `<details class="week" ${i===cw?'open':''}><summary><span class="stack-s" style="gap:4px;min-width:0"><span class="wk-n">${i===cw&&S.plan.start?'ТЕКУЩАЯ НЕДЕЛЯ':'НЕДЕЛЯ '+(i+1)}</span><h3>${esc(w.t.replace(/^Неделя \d+ · /,''))}</h3></span><span class="pill ${done===w.tasks.length?'good':''}">${done}/${w.tasks.length}</span></summary><div class="wb stack-s"><p class="muted">${esc(w.goal)}</p>${w.tasks.map((t,k)=>{const key=w.id+':'+k;const d=!!S.plan.done[key];return `<div class="check ${d?'done':''}"><input type="checkbox" id="pl-${esc(key)}" data-act="plan" data-k="${esc(key)}" ${d?'checked':''}><label for="pl-${esc(key)}"><span>${esc(t)}</span></label></div>`}).join('')}${w.axis?`<div class="row"><button class="btn small" data-act="train-cat" data-cat="${w.axis}">Тренажёр по этой оси</button></div>`:''}</div></details>`}).join('')}</div>
-    <div class="panel stack-s"><span class="eyebrow">Как работать с тренером дальше</span><p class="muted" style="font-size:14px">Раз в неделю возвращайся в чат с Claude и скажи «проверь мой прогресс в штабе». Твои результаты синхронизируются, и я скорректирую план, добавлю споты и упражнения под то, что увижу.</p></div>`;
+  if(!S.plan.start){S.plan.start=today();save()}
+  const cw=currentWeek();
+  return `<div class="hero"><span class="eyebrow">План на 6 недель</span><h1>Одна тема в неделю</h1><p>Каждую неделю: 2–3 урока в Школе, раздачи по теме, немного спотов в тренажёре и одна привычка, которую ты отрабатываешь в реальной игре. Уроки и раздачи отмечаются сами, когда ты их проходишь.</p></div>
+    <div class="stack">${PLAN.map((w,i)=>{
+      const items=[...w.lessons.map(id=>{const L=LESSONS.find(l=>l.id===id);return{k:'les:'+id,t:'Урок: '+(L?L.t:id),done:!!lessonDone(id),act:`data-act="sc-open" data-id="${id}"`}}),
+        {k:w.id+':hands',t:'Сыграть 3 раздачи в разделе «Раздачи»',manual:true,act:'data-go="hands"'},
+        {k:w.id+':drill',t:'Тренажёр: 2 раза по 10 ситуаций — тема «'+AXIS[w.cat].name+'»',manual:true,act:`data-act="train-cat" data-cat="${w.cat}"`},
+        {k:w.id+':table',t:'За столом: '+w.table,manual:true},
+        ...(w.final?[{k:w.id+':diag',t:'Пройти проверку уровня ещё раз и сравнить',manual:true,act:'data-go="diag"'}]:[])];
+      const done=items.filter(it=>it.manual?S.plan.done[it.k]:it.done).length;
+      return `<details class="week" ${i===cw?'open':''}><summary><span class="stack-s" style="gap:4px;min-width:0"><span class="wk-n">${i===cw?'ЭТА НЕДЕЛЯ':'НЕДЕЛЯ '+(i+1)}</span><h3>${esc(w.t)}</h3></span><span class="pill ${done===items.length?'good':''}">${done}/${items.length}</span></summary><div class="wb stack-s"><p class="muted">${esc(w.goal)}</p>
+        ${items.map(it=>{const d=it.manual?!!S.plan.done[it.k]:it.done;return `<div class="check ${d?'done':''}"><input type="checkbox" id="pl-${esc(it.k)}" ${it.manual?`data-act="plan" data-k="${esc(it.k)}"`:'disabled'} ${d?'checked':''}><label for="pl-${esc(it.k)}"><span>${esc(it.t)}</span></label>${it.act?`<button class="btn small" ${it.act}>Открыть</button>`:''}</div>`}).join('')}</div></details>`}).join('')}</div>
+    <div class="panel stack-s"><span class="eyebrow">Как работать со мной дальше</span><p class="muted" style="font-size:14px">Раз в неделю возвращайся в чат с Claude и пиши «проверь мой прогресс». Я увижу твои уроки, раздачи и ошибки и подстрою план.</p></div>`;
 }
 ACTS.plan=(el)=>{const k=el.dataset.k;if(el.checked)S.plan.done[k]=true;else delete S.plan.done[k];save();render()};
+
+/* ============================== GLOSSARY ============================== */
+const GL_RX=GLOSS.map(([n,src,d])=>({n,d,rx:new RegExp('(?<![А-Яа-яЁёA-Za-z0-9\\-])('+src+')(?![А-Яа-яЁёA-Za-z0-9])','i')}));
+function gl(html){
+  const used=[];let out=html;
+  GL_RX.forEach((g,i)=>{out=out.replace(g.rx,m=>{used.push([i,m]);return '\u0001'+(used.length-1)+'\u0002'})});
+  return out.replace(/\u0001(\d+)\u0002/g,(_,k)=>{const [i,m]=used[+k];return `<span class="term" tabindex="0" role="button" data-gl="${i}">${m}</span>`});
+}
+const txg=s=>gl(tx(s));
+function showGloss(el){
+  const g=GL_RX[+el.dataset.gl];const pop=$('#pop');if(!g||!pop)return;
+  pop.innerHTML=`<b>${esc(g.n)}</b><span>${esc(g.d)}</span>`;pop.hidden=false;
+  const r=el.getBoundingClientRect();const w=Math.min(300,window.innerWidth-32);pop.style.width=w+'px';
+  let x=clamp(r.left+r.width/2-w/2,16,window.innerWidth-w-16);let y=r.bottom+8;
+  pop.style.left=x+'px';pop.style.top=y+'px';
+  const ph=pop.offsetHeight;if(y+ph>window.innerHeight-12)pop.style.top=Math.max(12,r.top-ph-8)+'px';
+}
+function hideGloss(){const p=$('#pop');if(p)p.hidden=true}
+window.addEventListener('scroll',hideGloss,{passive:true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')hideGloss();if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('term')){e.preventDefault();showGloss(e.target)}});
+
+/* ============================== shared visual blocks ============================== */
+const BK=[['strong','Сильные','var(--bk-strong)'],['medium','Средние','var(--bk-medium)'],['draw','Дро','var(--bk-draw)'],['air','Ничего','var(--bk-air)']];
+function bucketsHTML(r,title){
+  const sum=BK.reduce((a,[k])=>a+(+r[k]||0),0)||1;
+  return `<div class="bk">${title?`<span class="bk-t">${esc(title)}</span>`:''}<div class="bk-bar" role="img" aria-label="${BK.map(([k,l])=>l+' '+Math.round((+r[k]||0)/sum*100)+'%').join(', ')}">${BK.map(([k,l,c])=>{const v=(+r[k]||0)/sum*100;return v>0?`<i style="width:${v}%;background:${c}"></i>`:''}).join('')}</div>
+    <div class="bk-l">${BK.map(([k,l,c])=>`<span><i style="background:${c}"></i>${l} <b class="mono">${Math.round((+r[k]||0)/sum*100)}%</b></span>`).join('')}</div></div>`;
+}
+function gridHTML(core,border,title){
+  const C=parseRange(core),B=parseRange(border||'');let g='',cc=0,bc=0;
+  for(let i=0;i<13;i++)for(let j=0;j<13;j++){const h=handAt(i,j);const inC=C.has(h),inB=B.has(h);if(inC)cc+=combos(h);if(inB)bc+=combos(h);
+    g+=`<div class="${i===j?'pair':''}${inC?' on':inB?' border-in':''}">${h.length===2?h:h.slice(0,2)+(h[2]==='s'?'s':'')}</div>`}
+  return `<div class="stack-s">${title?`<h3>${esc(title)}</h3>`:''}<div class="rg-wrap"><div class="rg ro">${g}</div></div>
+    <div class="legend"><span><i style="background:var(--brass)"></i>играй всегда (${(cc/1326*100).toFixed(0)}% рук)</span>${bc?`<span><i style="background:color-mix(in srgb,var(--warn) 70%,transparent)"></i>по ситуации: против слабых блайндов да, против агрессивных нет</span>`:''}</div></div>`;
+}
+function exampleHTML(e){
+  const x=e.ex;const q={hero:x.hero||'',board:x.board||'',pos:x.pos||'',pot:null,stack:null,nohero:!x.hero};
+  return `<div class="ex">${tableHTML(q)}<p>${txg(e.t)}</p><div class="why good"><b>Как правильно.</b> ${txg(e.v)}</div></div>`;
+}
+function blockHTML(b){
+  if(b.p)return `<p class="lp">${txg(b.p)}</p>`;
+  if(b.rule)return `<div class="rule"><span class="eyebrow">Правило</span><p>${txg(b.rule)}</p></div>`;
+  if(b.list)return `<ul class="ll">${b.list.map(x=>`<li>${txg(x)}</li>`).join('')}</ul>`;
+  if(b.tbl)return `<div class="scroll-x"><table class="mini lt"><thead><tr>${b.tbl.h.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${b.tbl.r.map(r=>`<tr>${r.map((c,i)=>`<td${i===0?' class="lt-first"':''}>${txg(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  if(b.ex)return exampleHTML(b);
+  if(b.bk)return bucketsHTML(b.bk.r,b.bk.t);
+  if(b.grid)return gridHTML(b.grid.core,b.grid.border,b.grid.t);
+  return '';
+}
+
+/* ============================== SCHOOL ============================== */
+const SC={open:null,ans:{}};
+function lessonDone(id){return S.lessons&&S.lessons[id]}
+function nextLesson(){return LESSONS.find(l=>!lessonDone(l.id))}
+function renderSchool(){
+  if(SC.open){const L=LESSONS.find(l=>l.id===SC.open);if(L)return renderLesson(L)}
+  const done=LESSONS.filter(l=>lessonDone(l.id)).length;const nx=nextLesson();
+  return `<div class="hero"><span class="eyebrow">Школа</span><h1>Короткие уроки без лишней теории</h1><p>Каждый урок — 5–7 минут: простое объяснение, живые примеры раздач и правило, которое можно унести за стол. В конце 1–2 вопроса на проверку. Незнакомое слово подчёркнуто пунктиром — нажми на него, и появится объяснение.</p>
+    <div class="row" style="margin-top:6px">${nx?`<button class="btn primary" data-act="sc-open" data-id="${nx.id}">${done?'Продолжить':'Начать'}: ${esc(nx.t)}</button>`:'<span class="pill good">Все уроки пройдены</span>'}<span class="faint" style="font-size:13px">Пройдено ${done} из ${LESSONS.length}</span></div></div>
+    ${MODULES.map(m=>{const ls=LESSONS.filter(l=>l.m===m.id);return `<div class="panel stack"><div class="stack-s"><h2>${esc(m.n)}</h2><p class="muted" style="font-size:14px">${esc(m.d)}</p></div>
+      <div class="grid2">${ls.map(l=>{const d=lessonDone(l.id);return `<button class="lcard" data-act="sc-open" data-id="${l.id}"><span class="row" style="justify-content:space-between;width:100%"><span class="faint mono" style="font-size:12px">${l.min} мин</span>${d?`<span class="pill good">пройден · ${d.c}/${d.t}</span>`:''}</span><b>${esc(l.t)}</b></button>`}).join('')}</div></div>`}).join('')}`;
+}
+function renderLesson(L){
+  const idx=LESSONS.indexOf(L);const nx=LESSONS[idx+1];const m=MODULES.find(x=>x.id===L.m);
+  const ans=SC.ans[L.id]||{};const allA=L.q.every((_,i)=>ans[i]!=null);
+  return `<div class="row"><button class="btn small" data-act="sc-back">← Все уроки</button><span class="faint" style="font-size:13px">${esc(m.n)} · урок ${LESSONS.filter(l=>l.m===L.m).indexOf(L)+1}</span></div>
+    <article class="lesson stack"><h1>${esc(L.t)}</h1>${L.b.map(blockHTML).join('')}</article>
+    <div class="panel stack"><span class="eyebrow">Проверь себя</span>
+      ${L.q.map((q,i)=>{const a=ans[i];return `<div class="stack-s"><p class="q-text">${txg(q.q)}</p><div class="opts">${q.opts.map((o,k)=>{let c='';if(a!=null){if(k===q.ans)c='right';else if(k===a)c='wrong'}return `<button class="opt ${c}" data-act="sc-ans" data-l="${L.id}" data-i="${i}" data-k="${k}" ${a!=null?'disabled':''}><span class="k">${'ABCD'[k]}</span><span>${tx(o)}</span></button>`}).join('')}</div>${a!=null?`<div class="why ${a===q.ans?'good':'bad'}"><b>${a===q.ans?'Верно.':'Не совсем.'}</b> ${txg(q.why)}</div>`:''}</div>`}).join('<hr class="divider">')}
+      ${allA?`<div class="row">${nx?`<button class="btn primary" data-act="sc-open" data-id="${nx.id}">Следующий урок: ${esc(nx.t)}</button>`:''}<button class="btn" data-go="hands">Закрепить на раздачах</button></div>`:''}
+    </div>`;
+}
+ACTS['sc-open']=(el)=>{SC.open=el.dataset.id;go('school')};
+ACTS['sc-back']=()=>{SC.open=null;render();window.scrollTo({top:0})};
+ACTS['sc-ans']=(el)=>{const id=el.dataset.l,i=+el.dataset.i,k=+el.dataset.k;const L=LESSONS.find(l=>l.id===id);SC.ans[id]=SC.ans[id]||{};if(SC.ans[id][i]!=null)return;SC.ans[id][i]=k;
+  const q=L.q[i];const st=S.stats[L.m==='pre'?'preflop':L.m==='post'?'postflop':L.m==='read'?'ranges':L.m==='opp'?'exploit':'mental'];
+  if(L.q.every((_,j)=>SC.ans[id][j]!=null)){const c=L.q.filter((qq,j)=>SC.ans[id][j]===qq.ans).length;S.lessons=S.lessons||{};S.lessons[id]={c,t:L.q.length,d:today()};logEvent('lesson',null,c,L.q.length,{id});save()}
+  const y=window.scrollY;render();window.scrollTo({top:y})};
+
+/* ============================== HANDS (play the hand) ============================== */
+const HP={open:null,step:0,picks:[]};
+function renderHands(){
+  if(HP.open){const H=HANDS.find(h=>h.id===HP.open);if(H)return renderHand(H)}
+  const done=HANDS.filter(h=>S.hands&&S.hands[h.id]).length;
+  const groups=[['MTT','Турниры'],['Живой','Живой кэш'],['Онлайн','Онлайн-кэш']];
+  return `<div class="hero"><span class="eyebrow">Сыграй раздачу</span><h1>Раздачи от префлопа до ривера</h1><p>Ты принимаешь решение на каждой улице. После каждого шага тренер объясняет, почему так, и показывает, какие руки сейчас у соперника, разложенные по четырём корзинам. Так тренируется главное: видеть не одну свою руку, а всю ситуацию.</p><span class="faint" style="font-size:13px">Сыграно ${done} из ${HANDS.length}</span></div>
+    ${groups.map(([k,n])=>{const hs=HANDS.filter(h=>(h.format||'').startsWith(k));if(!hs.length)return '';return `<div class="panel stack"><h2>${n}</h2><div class="grid2">${hs.map(h=>{const r=S.hands&&S.hands[h.id];return `<button class="lcard" data-act="hp-open" data-id="${h.id}"><span class="row" style="justify-content:space-between;width:100%"><span class="cards">${cardsOf(h.hero,true)}</span>${r?`<span class="pill ${r.c===r.t?'good':'brass'}">${r.c}/${r.t}</span>`:`<span class="faint" style="font-size:12px">${h.steps.length} ${h.steps.length===1?'решение':h.steps.length<5?'решения':'решений'}</span>`}</span><b>${esc(h.title)}</b><span class="faint" style="font-size:12.5px">${esc(h.format)} · ${esc(h.heroPos)} против ${esc(h.villainPos)}</span></button>`}).join('')}</div></div>`}).join('')}`;
+}
+function streetName(s){return{preflop:'Префлоп',flop:'Флоп',turn:'Тёрн',river:'Ривер'}[s]||s}
+function renderHand(H){
+  const cur=HP.step;const finished=cur>=H.steps.length;
+  const past=H.steps.slice(0,Math.min(cur,H.steps.length)).map((st,i)=>{const p=HP.picks[i];const ok=p===st.best;return `<details class="week"><summary><span class="row" style="gap:8px;min-width:0"><span class="pill ${ok?'good':'bad'}">${streetName(st.street)}</span><span style="font-size:14px">${esc(st.opts[st.best])}</span></span>${st.board?`<span class="cards">${cardsOf(st.board,true)}</span>`:''}</summary><div class="wb stack-s"><p class="muted" style="font-size:14px">${txg(st.text)}</p><div class="why">${txg(st.why)}</div></div></details>`}).join('');
+  let body='';
+  if(!finished){
+    const st=H.steps[cur];const ans=HP.picks[cur]!=null;const pk=HP.picks[cur];
+    body=`<div class="panel stack"><div class="row" style="justify-content:space-between"><span class="eyebrow">${streetName(st.street)} · решение ${cur+1} из ${H.steps.length}</span></div>
+      ${tableHTML({hero:H.hero,board:st.board,pos:H.heroPos+' vs '+H.villainPos,pot:st.pot,stack:null})}
+      <p class="q-text">${txg(st.text)}</p>
+      <div class="opts">${st.opts.map((o,k)=>{let c='';if(ans){if(k===st.best)c='right';else if(k===pk)c='wrong'}return `<button class="opt ${c}" data-act="hp-pick" data-k="${k}" ${ans?'disabled':''}><span class="k">${'ABCD'[k]}</span><span>${tx(o)}</span></button>`}).join('')}</div>
+      ${ans?`<div class="why ${pk===st.best?'good':'bad'}"><b>${pk===st.best?'Верно.':'Лучше: '+esc(st.opts[st.best])+'.'}</b> ${txg(st.why)}</div>
+        <div class="panel tight stack-s" style="background:transparent"><span class="eyebrow">Что сейчас у соперника</span>${bucketsHTML(st.range)}<p style="font-size:14px">${txg(st.rangeNote)}</p></div>
+        ${st.rule?`<div class="rule"><span class="eyebrow">Правило</span><p>${txg(st.rule)}</p></div>`:''}
+        <div class="row"><button class="btn primary" data-act="hp-next">${cur===H.steps.length-1?'Итог раздачи':'Следующая улица'}</button></div>`:''}
+    </div>`;
+  }else{
+    const c=H.steps.filter((st,i)=>HP.picks[i]===st.best).length;
+    const idx=HANDS.indexOf(H);const nx=HANDS.slice(idx+1).find(h=>!(S.hands&&S.hands[h.id]))||HANDS[idx+1];
+    body=`<div class="panel stack"><span class="eyebrow">Итог</span><div class="row" style="align-items:flex-end;gap:14px"><span class="big-num">${c}/${H.steps.length}</span><span class="muted" style="padding-bottom:8px">${c===H.steps.length?'Сыграно идеально.':'Перечитай разборы улиц выше: важен ход мысли.'}</span></div>
+      <div class="rule"><span class="eyebrow">Главный урок</span><p>${txg(H.summary)}</p></div>
+      <div class="row">${nx?`<button class="btn primary" data-act="hp-open" data-id="${nx.id}">Следующая раздача</button>`:''}<button class="btn" data-act="hp-again">Сыграть заново</button><button class="btn" data-act="hp-back">Все раздачи</button></div></div>`;
+  }
+  return `<div class="row"><button class="btn small" data-act="hp-back">← Все раздачи</button></div>
+    <div class="panel stack-s"><span class="eyebrow">${esc(H.format)}</span><h2>${esc(H.title)}</h2>
+      <div class="row" style="gap:14px"><span class="cards">${cardsOf(H.hero)}</span><div class="stack-s" style="gap:2px;min-width:0;flex:1"><span>Ты: <b>${esc(H.heroPos)}</b>, стек <b class="mono">${esc(H.stack)}бб</b></span><span class="muted" style="font-size:14px">Соперник (${esc(H.villainPos)}): ${txg(H.villain)}</span></div></div></div>
+    ${past}${body}`;
+}
+ACTS['hp-open']=(el)=>{HP.open=el.dataset.id;HP.step=0;HP.picks=[];go('hands')};
+ACTS['hp-back']=()=>{HP.open=null;render();window.scrollTo({top:0})};
+ACTS['hp-again']=()=>{HP.step=0;HP.picks=[];render();window.scrollTo({top:0})};
+ACTS['hp-pick']=(el)=>{if(HP.picks[HP.step]!=null)return;HP.picks[HP.step]=+el.dataset.k;const y=window.scrollY;render();window.scrollTo({top:y})};
+ACTS['hp-next']=()=>{const H=HANDS.find(h=>h.id===HP.open);HP.step++;
+  if(HP.step>=H.steps.length){const c=H.steps.filter((st,i)=>HP.picks[i]===st.best).length;S.hands=S.hands||{};const prev=S.hands[H.id];S.hands[H.id]={c,t:H.steps.length,d:today(),n:(prev&&prev.n||0)+1};
+    H.steps.forEach((st,i)=>{const cat=st.street==='preflop'?'preflop':'postflop';const s=S.stats[cat]||(S.stats[cat]={c:0,t:0});s.t++;if(HP.picks[i]===st.best)s.c++});
+    logEvent('hand',null,c,H.steps.length,{id:H.id});save()}
+  render();const el=document.querySelector('.panel:last-of-type');if(el)el.scrollIntoView({block:'start'})};
 
 /* ============================== boot ============================== */
 renderTabs();render();
