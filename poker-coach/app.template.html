@@ -14,6 +14,7 @@
   --paper:#f8f3e7; --paper-ink:#1b1a17;
   --s-spade:#1b1a17; --s-heart:#c8382e; --s-diam:#2463c9; --s-club:#1f7f45;
   --bk-strong:#ef7a63; --bk-medium:#e8bf55; --bk-draw:#73a9ff; --bk-air:#5e7a71;
+  --ch-r:#ef7a63; --ch-c:#5f9cf5; --ch-f:rgba(241,234,217,.05);
   --good:#63d18f; --bad:#f0705f; --warn:#f0c04f; --info:#7fb7ff;
   --f-display:"Unbounded","Arial Black",system-ui,sans-serif;
   --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -216,6 +217,11 @@ table.lt td.lt-first{font-weight:600;white-space:nowrap}
 .bk-l i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:0}
 .bk-l b{color:var(--ink)}
 .rg.ro div{cursor:default}
+.rg.ch div{color:rgba(241,234,217,.55)}
+.rg.ch div.ch-r{background:var(--ch-r);color:#2a0b07}
+.rg.ch div.ch-c{background:var(--ch-c);color:#06142b}
+.rg.ch div.ch-f{background:var(--ch-f)}
+.rg.ch div.ch-sel{outline:2.5px solid var(--ink);outline-offset:-1px;z-index:1}
 .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--paper);color:var(--paper-ink);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.4);z-index:50}
 .big-num{font:800 clamp(40px,9vw,64px)/1 var(--f-display);letter-spacing:-.02em}
 .archetype{border:1px solid color-mix(in srgb,var(--brass) 45%,transparent);background:linear-gradient(135deg,rgba(217,173,85,.12),rgba(217,173,85,.02));border-radius:var(--r);padding:18px}
@@ -410,7 +416,7 @@ const LVL=['','базовый','средний','продвинутый'];
 
 /* ============================== router ============================== */
 const TABS=[
-  {id:'home',name:'Главная'},{id:'school',name:'Школа'},{id:'hands',name:'Раздачи'},{id:'train',name:'Тренажёр'},
+  {id:'home',name:'Главная'},{id:'school',name:'Школа'},{id:'chart',name:'Шпаргалка'},{id:'hands',name:'Раздачи'},{id:'train',name:'Тренажёр'},
   {id:'ranges',name:'Диапазоны'},{id:'players',name:'Соперники'},{id:'ai',name:'AI-тренер'},
   {id:'mental',name:'Голова'},{id:'plan',name:'План'},
 ];
@@ -425,7 +431,7 @@ function rerender(){if(!busy)render()}
 let busy=false;
 function render(){
   const m=$('#main');
-  const f={home:renderHome,school:renderSchool,hands:renderHands,diag:renderDiag,train:renderTrain,ranges:renderRanges,players:renderDossier,speed:renderSpeed,ai:renderAI,mental:renderMental,plan:renderPlan}[tab];
+  const f={home:renderHome,school:renderSchool,chart:renderChart,hands:renderHands,diag:renderDiag,train:renderTrain,ranges:renderRanges,players:renderDossier,speed:renderSpeed,ai:renderAI,mental:renderMental,plan:renderPlan}[tab];
   m.innerHTML=`<section class="screen">${f()}</section>`;
   if(after){const a=after;after=null;a()}
 }
@@ -507,6 +513,7 @@ function renderHome(){
   html+=`<div class="panel stack"><span class="eyebrow">Что внутри</span><div class="grid3">
     <button class="lcard" data-go="school"><b>Школа</b><span class="muted" style="font-size:14px">${LESSONS.length} коротких уроков: префлоп, игра после флопа, что у соперника, стадии турнира.</span></button>
     <button class="lcard" data-go="hands"><b>Раздачи</b><span class="muted" style="font-size:14px">${HANDS.length} раздач от префлопа до ривера с разбором каждой улицы.</span></button>
+    <button class="lcard" data-go="chart"><b>Шпаргалка</b><span class="muted" style="font-size:14px">Таблица для 9-max турнира: что делать против лимперов, рейза и рейза с коллерами.</span></button>
     <button class="lcard" data-go="ranges"><b>Диапазоны</b><span class="muted" style="font-size:14px">Нарисуй по памяти, какие руки играть с каждого места, и сверься с образцом.</span></button>
     <button class="lcard" data-go="players"><b>Соперники</b><span class="muted" style="font-size:14px">Четыре типа игроков и простой план против каждого.</span></button>
     <button class="lcard" data-go="ai"><b>AI-тренер</b><span class="muted" style="font-size:14px">Вставь свою раздачу и получи разбор простыми словами.</span></button>
@@ -1297,6 +1304,7 @@ ACTS['hp-next']=()=>{const H=HANDS.find(h=>h.id===HP.open);HP.step++;
     logEvent('hand',null,c,H.steps.length,{id:H.id});save()}
   render();const el=document.querySelector('.panel:last-of-type');if(el)el.scrollIntoView({block:'start'})};
 
+/*__CHART__*/
 /* ============================== boot ============================== */
 renderTabs();render();
 initCaps();

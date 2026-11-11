@@ -41,4 +41,4 @@ for h in hands:
         assert 0<=st['best']<len(st['opts']),h['id']
 print('hands',len(hands))
 lessons=open('lessons.js').read()
-open('index.html','w').write(t.replace('/*__DATA__*/',data).replace('/*__LESSONS__*/',lessons).replace('/*__HANDS__*/','const HANDS='+json.dumps(hands,ensure_ascii=False,separators=(',',':'))+';'))
+open('index.html','w').write(t.replace('/*__DATA__*/',data).replace('/*__LESSONS__*/',lessons).replace('/*__CHART__*/',open('chart.js').read()).replace('/*__HANDS__*/','const HANDS='+json.dumps(hands,ensure_ascii=False,separators=(',',':'))+';'))
